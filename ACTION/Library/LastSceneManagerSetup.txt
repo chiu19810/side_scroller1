@@ -1,4 +1,0 @@
-sceneSetups:
-- path: Assets/aktion.unity
-  isLoaded: 1
-  isActive: 1
