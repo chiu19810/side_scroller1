@@ -66,6 +66,9 @@ public class PlayerController : MonoBehaviour
             horiJumpFlag = false;
             moveSpeedChange = 0;
 
+            if (horiFrame > 50)
+                horiJumpFlag = true;
+
             if (jumpFrame == 0)
             {
                 rb.velocity = new Vector2(rb.velocity.x, 0);
@@ -76,22 +79,12 @@ public class PlayerController : MonoBehaviour
                     jumpFrame = 10;
                     acon.SetBool("Jump", true);
                     rb.AddForce(Vector2.up * Bjump * Time.deltaTime, ForceMode2D.Impulse);
-
-                    if (horiFrame > 15)
-                    {
-                        horiJumpFlag = true;
-                    }
                 }
                 else if (jumpButtonFrame < 7 && isJumpUp && !acon.GetBool("Jump"))
                 {
                     jumpFrame = 10;
                     acon.SetBool("Jump", true);
                     rb.AddForce(Vector2.up * Sjump * Time.deltaTime, ForceMode2D.Impulse);
-
-                    if (horiFrame > 15)
-                    {
-                        horiJumpFlag = true;
-                    }
                 }
             }
         }
@@ -118,14 +111,19 @@ public class PlayerController : MonoBehaviour
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 
-
         if (isGround)
         {
             moveSpeedChange = 0;
+
+            if (horiFrame < 50)
+                moveSpeedChange = speed / 2;
         }
         else
         {
-            moveSpeedChange = speed / 3;
+            if (!horiJumpFlag)
+                horiFrame = 0;
+
+            moveSpeedChange = speed / 2;
         }
       
         if (h < 0)
