@@ -66,7 +66,7 @@ public class PlayerController : MonoBehaviour
             horiJumpFlag = false;
             moveSpeedChange = 0;
 
-            if (horiFrame > 50)
+            if (horiFrame > 25)
                 horiJumpFlag = true;
 
             if (jumpFrame == 0)
@@ -115,7 +115,7 @@ public class PlayerController : MonoBehaviour
         {
             moveSpeedChange = 0;
 
-            if (horiFrame < 50)
+            if (horiFrame < 25)
                 moveSpeedChange = speed / 2;
         }
         else
@@ -172,7 +172,7 @@ public class PlayerController : MonoBehaviour
         }
 
         if (!horiJumpFlag && !jumpMoveFlag && !isGround)
-            moveSpeedChange = speed / 1.2f;
+            moveSpeedChange = speed / 1.5f;
 
         transform.Translate(h * (speed - moveSpeedChange) * Time.deltaTime, 0, 0);
     }
