@@ -5,6 +5,7 @@ public class PlayerController : MonoBehaviour
 {
     private Animator acon;
     private Rigidbody2D rb;
+    private CircleCollider2D circleCollier2D;
     private bool isGround;
     private bool horiJumpFlag;
     private bool jumpMoveFlag;
@@ -30,6 +31,7 @@ public class PlayerController : MonoBehaviour
 
         acon = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
+        circleCollier2D = GetComponent<CircleCollider2D>();
         isGround = false;
         horiJumpFlag = false;
         jumpMoveFlag = false;
@@ -41,9 +43,17 @@ public class PlayerController : MonoBehaviour
 	
 	void Update ()
     {
-        IsGround();
         Jump();
         Move();
+    }
+
+    void FixedUpdate()
+    {
+        Vector2 pos = transform.position;
+        Vector2 groundCheck = new Vector2(pos.x, pos.y - (circleCollier2D.radius * 1.5f));
+        Vector2 groundArea = new Vector2(circleCollier2D.radius * 0.49f, 0.05f);
+
+        isGround = Physics2D.OverlapArea(groundCheck + groundArea, groundCheck - groundArea, groundLayer);
     }
 
     private void Jump()
@@ -60,6 +70,9 @@ public class PlayerController : MonoBehaviour
         if (isJump && jumpButtonFrame > 0)
             jumpButtonFrame++;
 
+        if (jumpFrame > 0)
+            jumpFrame--;
+
         if (isGround)
         {
             jumpMoveFlag = false;
@@ -69,6 +82,7 @@ public class PlayerController : MonoBehaviour
             if (horiFrame > 25)
                 horiJumpFlag = true;
 
+        Debug.Log(jumpFrame);
             if (jumpFrame == 0)
             {
                 rb.velocity = new Vector2(rb.velocity.x, 0);
@@ -98,9 +112,6 @@ public class PlayerController : MonoBehaviour
                 }
             }
         }
-
-        if (jumpFrame > 0)
-            jumpFrame--;
 
         if (isJumpUp)
             jumpButtonFrame = 0;
@@ -175,10 +186,5 @@ public class PlayerController : MonoBehaviour
             moveSpeedChange = speed / 1.5f;
 
         transform.Translate(h * (speed - moveSpeedChange) * Time.deltaTime, 0, 0);
-    }
-
-    private void IsGround()
-    {
-        isGround = Physics2D.Linecast(transform.position, transform.position - transform.up * 0.37f, groundLayer);
     }
 }
