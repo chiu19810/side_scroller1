@@ -32,9 +32,11 @@ public class PlayerController : MonoBehaviour
         acon = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
         circleCollier2D = GetComponent<CircleCollider2D>();
+
         isGround = false;
         horiJumpFlag = false;
         jumpMoveFlag = false;
+
         jumpButtonFrame = 0;
         jumpFrame = 0;
         moveSpeedChange = 0;
@@ -82,23 +84,22 @@ public class PlayerController : MonoBehaviour
             if (horiFrame > 25)
                 horiJumpFlag = true;
 
-        Debug.Log(jumpFrame);
             if (jumpFrame == 0)
             {
                 rb.velocity = new Vector2(rb.velocity.x, 0);
                 acon.SetBool("Jump", false);
 
-                if (jumpButtonFrame == 7 && !acon.GetBool("Jump"))
+                if (jumpButtonFrame == 8 && !acon.GetBool("Jump"))
                 {
                     jumpFrame = 10;
                     acon.SetBool("Jump", true);
-                    rb.AddForce(Vector2.up * Bjump * Time.deltaTime, ForceMode2D.Impulse);
+                    rb.AddForce(Vector2.up * Bjump / 60, ForceMode2D.Impulse);
                 }
-                else if (jumpButtonFrame < 7 && isJumpUp && !acon.GetBool("Jump"))
+                else if (jumpButtonFrame < 8 && isJumpUp && !acon.GetBool("Jump"))
                 {
                     jumpFrame = 10;
                     acon.SetBool("Jump", true);
-                    rb.AddForce(Vector2.up * Sjump * Time.deltaTime, ForceMode2D.Impulse);
+                    rb.AddForce(Vector2.up * Sjump / 60, ForceMode2D.Impulse);
                 }
             }
         }
@@ -134,7 +135,7 @@ public class PlayerController : MonoBehaviour
             if (!horiJumpFlag)
                 horiFrame = 0;
 
-            moveSpeedChange = speed / 2;
+            moveSpeedChange = speed / 3;
         }
       
         if (h < 0)
@@ -162,6 +163,7 @@ public class PlayerController : MonoBehaviour
         {
             acon.SetBool("Squat", true);
             moveSpeedChange = speed / 1.5f;
+            horiFrame = 0;
         }
         else if (v > 0)
         {
