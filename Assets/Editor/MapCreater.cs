@@ -130,16 +130,18 @@ public class MapCreater : EditorWindow
         float w = 50.0f;
         float h = 50.0f;
         float winMaxW = Screen.width - 40;
-        float maxW = winMaxW - 50;
+        float maxW = winMaxW - 20;
 
         GUILayout.Label("ツールチップ : ", GUILayout.Width(110));
         EditorGUILayout.BeginVertical(GUI.skin.box);
-        Rect workArea = GUILayoutUtility.GetRect(10, 10000, 10, 50);
-        ToolSelectBoxScrollPos = GUI.BeginScrollView(workArea, ToolSelectBoxScrollPos, new Rect(0, 0, winMaxW, 50), false, false);
+        Rect workArea;
+        /*        Rect workArea = GUILayoutUtility.GetRect(10, 10000, 10, 50);
+                ToolSelectBoxScrollPos = GUI.BeginScrollView(workArea, ToolSelectBoxScrollPos, new Rect(0, 0, winMaxW, 50), false, false);*/
+        ToolSelectBoxScrollPos = EditorGUILayout.BeginScrollView(ToolSelectBoxScrollPos, true, false, GUILayout.Height(75));
 
+        EditorGUILayout.BeginHorizontal();
         string path = "Assets/Editor/MapCreater/eraser.png";
         Texture2D tex = (Texture2D)AssetDatabase.LoadAssetAtPath(path, typeof(Texture2D));
-        GUILayout.BeginArea(new Rect(x, y, w, h));
         if (GUILayout.Button(tex, GUILayout.MaxWidth(w), GUILayout.MaxHeight(h), GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false)))
         {
             Event e = Event.current;
@@ -152,29 +154,23 @@ public class MapCreater : EditorWindow
                 selectedLeftImagePath = path;
             }
         }
-        GUILayout.EndArea();
 
         path = "Assets/Editor/MapCreater/zoom_in.png";
         tex = (Texture2D)AssetDatabase.LoadAssetAtPath(path, typeof(Texture2D));
-        GUILayout.BeginArea(new Rect(x + w, y, w, h));
         if (GUILayout.Button(tex, GUILayout.MaxWidth(w), GUILayout.MaxHeight(h), GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false)))
         {
             ZoomIn();
         }
-        GUILayout.EndArea();
 
         path = "Assets/Editor/MapCreater/zoom_out.png";
         tex = (Texture2D)AssetDatabase.LoadAssetAtPath(path, typeof(Texture2D));
-        GUILayout.BeginArea(new Rect(x + w * 2, y, w, h));
         if (GUILayout.Button(tex, GUILayout.MaxWidth(w), GUILayout.MaxHeight(h), GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false)))
         {
             ZoomOut();
         }
-        GUILayout.EndArea();
 
         path = "Assets/Editor/MapCreater/start.png";
         tex = (Texture2D)AssetDatabase.LoadAssetAtPath(path, typeof(Texture2D));
-        GUILayout.BeginArea(new Rect(x + w * 3, y, w, h));
         if (GUILayout.Button(tex, GUILayout.MaxWidth(w), GUILayout.MaxHeight(h), GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false)))
         {
             Event e = Event.current;
@@ -187,11 +183,9 @@ public class MapCreater : EditorWindow
                 selectedLeftImagePath = path;
             }
         }
-        GUILayout.EndArea();
 
         path = "Assets/Editor/MapCreater/areachange.png";
         tex = (Texture2D)AssetDatabase.LoadAssetAtPath(path, typeof(Texture2D));
-        GUILayout.BeginArea(new Rect(x + w * 4, y, w, h));
         if (GUILayout.Button(tex, GUILayout.MaxWidth(w), GUILayout.MaxHeight(h), GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false)))
         {
             Event e = Event.current;
@@ -204,9 +198,10 @@ public class MapCreater : EditorWindow
                 selectedLeftImagePath = path;
             }
         }
-        GUILayout.EndArea();
 
-        GUI.EndScrollView();
+        //        GUI.EndScrollView();
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.EndScrollView();
         EditorGUILayout.EndVertical();
 
         GUILayout.Label("マップチップ : ", GUILayout.Width(110));
@@ -219,7 +214,7 @@ public class MapCreater : EditorWindow
             if (x > maxW)
             {
                 x = 0.0f;
-                y += h;
+                y += h + 4;
             }
 
             tex = (Texture2D)AssetDatabase.LoadAssetAtPath(d, typeof(Texture2D));
@@ -238,7 +233,7 @@ public class MapCreater : EditorWindow
                 }
             }
             GUILayout.EndArea();
-            x += w;
+            x += w + 4;
         }
 
         GUI.EndScrollView();
@@ -254,7 +249,7 @@ public class MapCreater : EditorWindow
             if (x2 > maxW)
             {
                 x2 = 0.0f;
-                y2 += h;
+                y2 += h + 4;
             }
 
             tex = (Texture2D)AssetDatabase.LoadAssetAtPath(d, typeof(Texture2D));
@@ -273,7 +268,7 @@ public class MapCreater : EditorWindow
                 }
             }
             GUILayout.EndArea();
-            x2 += w;
+            x2 += w + 4;
         }
 
         GUI.EndScrollView();
@@ -338,12 +333,32 @@ public class MapCreater : EditorWindow
 
     private void ZoomIn()
     {
+        gridSize += 5;
+        if (gridSize > 100)
+        {
+            gridSize = 100;
+        }
 
+        if (subWindow)
+        {
+            subWindow.GridSizeUpdate();
+            subWindow.Repaint();
+        }
     }
 
     private void ZoomOut()
     {
+        gridSize -= 5;
+        if (gridSize < 5)
+        {
+            gridSize = 5;
+        }
 
+        if (subWindow)
+        {
+            subWindow.GridSizeUpdate();
+            subWindow.Repaint();
+        }
     }
 
     public string SelectedLeftImagePath
@@ -354,6 +369,11 @@ public class MapCreater : EditorWindow
     public string SelectedRightImagePath
     {
         get { return selectedRightImagePath; }
+    }
+
+    public void SetSelectedImagePath(string path)
+    {
+        selectedLeftImagePath = path;
     }
 
     public int MapSizeX
@@ -371,6 +391,11 @@ public class MapCreater : EditorWindow
 		get { return gridSize; }
 	}
 
+    public void SetGridSize(float size)
+    {
+        gridSize = size;
+    }
+
     public string AreaChangeMapName
     {
         get { return areaChangeMapName; }
@@ -384,6 +409,11 @@ public class MapCreater : EditorWindow
     public string AreaChangeMapY
     {
         get { return areaChangeMapY; }
+    }
+
+    public string OutputFileName
+    {
+        get { return outputFileName; }
     }
 
     // 出力先パスを生成
@@ -459,6 +489,12 @@ public class MapCreaterSubWindow : EditorWindow
         gridRect = CreateGrid(mapSizeY, mapSizeX);
     }
 
+    public void GridSizeUpdate()
+    {
+        gridSize = parent.GridSize;
+        gridRect = CreateGrid(mapSizeY, mapSizeX);
+    }
+
     void OnGUI()
     {
         EditorGUILayout.BeginVertical(GUI.skin.box);
@@ -522,7 +558,26 @@ public class MapCreaterSubWindow : EditorWindow
 
         // クリックされた位置を探して、その場所に画像データを入れる
         Event e = Event.current;
-        if (e.button == 1)
+        if (e.type == EventType.ScrollWheel)
+        {
+            if (e.delta[1] == 3)
+            {
+                parent.SetGridSize(parent.GridSize + 5);
+            }
+            else if (e.delta[1] == -3)
+            {
+                parent.SetGridSize(parent.GridSize - 5);
+            }
+
+            if (parent.GridSize > 100)
+                parent.SetGridSize(100);
+            else if (parent.GridSize < 5)
+                parent.SetGridSize(5);
+
+            GridSizeUpdate();
+            Repaint();
+        }
+        else if (e.button == 1)
         {
             if (mouseX != -1 && mouseY != -1)
             {
@@ -564,9 +619,28 @@ public class MapCreaterSubWindow : EditorWindow
                 }
             }
         }
-        else if (e.type == EventType.MouseDrag || e.type == EventType.MouseDown)
+        else if (e.type == EventType.MouseDown && e.button == 2)
         {
             if (mouseX != -1 && mouseY != -1)
+            {
+                string[] stas = map[mouseY, mouseX].Split('|');
+
+                if (map[mouseY, mouseX] != "")
+                {
+                    if (stas[0].IndexOf("areachange") > -1)
+                        parent.SetSelectedImagePath(stas[0]);
+                    else if (map[mouseY, mouseX].IndexOf("start") > -1)
+                        parent.SetSelectedImagePath(map[mouseY, mouseX]);
+                    else
+                        parent.SetSelectedImagePath(map[mouseY, mouseX]);
+
+                    parent.Repaint();
+                }
+            }
+        }
+        else if (e.type == EventType.MouseDrag || e.type == EventType.MouseDown)
+        {
+            if (mouseX != -1 && mouseY != -1 && e.button != 2)
             {
                 if (parent.SelectedLeftImagePath != null)
                 {
@@ -736,6 +810,12 @@ public class MapCreaterSubWindow : EditorWindow
     {
         string path = parent.OutputFilePath();
 
+        if (parent.OutputFileName == "")
+        {
+            EditorUtility.DisplayDialog("MapCreater エラー", "ファイル名が設定されていません！", "ok");
+            return;
+        }
+
         if (System.IO.File.Exists(path))
         {
             System.IO.FileStream st = new System.IO.FileStream(path, FileMode.Open);
@@ -756,7 +836,52 @@ public class MapCreaterSubWindow : EditorWindow
     // ファイルを開く
     private void OpenFile()
     {
-        
+        string path = EditorUtility.OpenFilePanel("select file", "Assets/Map/", "txt");
+
+        if (!string.IsNullOrEmpty(path))
+        {
+            string text = "";
+            int sizeX = 0;
+            int sizeY = 0;
+
+            StreamReader sr = new StreamReader(path, System.Text.Encoding.Default);
+
+            while (sr.Peek() >= 0)
+            {
+                string sb = sr.ReadLine();
+                if (sb != "")
+                {
+                    text += sb + "!";
+                    mapSizeX = sizeX;
+                    sizeY++;
+                }
+
+                string[] mapLine = sb.Split(',');
+                sizeX = mapLine.Length;
+            }
+            sr.Close();
+
+            mapSizeY = sizeY;
+            map = new string[mapSizeY, mapSizeX];
+            for (int i = 0; i < mapSizeY; i++)
+            {
+                for (int j = 0; j < mapSizeX; j++)
+                {
+                    if (text.Split('!')[i].Split(',')[j].IndexOf("start") > -1)
+                        map[i, j] = "Assets/Editor/MapCreater/" + text.Split('!')[i].Split(',')[j] + ".png";
+                    else if (text.Split('!')[i].Split(',')[j].IndexOf("areachange") > -1)
+                        map[i, j] = "Assets/Editor/MapCreater/" + text.Split('!')[i].Split(',')[j].Split('|')[0] + ".png|" + text.Split('!')[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text.Split('!')[i].Split(',')[j].Split('|')[1].Split(':')[1] + ":" + text.Split('!')[i].Split(',')[j].Split('|')[1].Split(':')[2];
+                    else if (text.Split('!')[i].Split(',')[j] != "")
+                        map[i, j] = "Assets/Textures/" + text.Split('!')[i].Split(',')[j] + ".png";
+                    else
+                        map[i, j] = "";
+                }
+            }
+
+            gridRect = CreateGrid(mapSizeY, mapSizeX);
+
+            Repaint();
+        }
     }
 
     // 出力するマップデータ整形
@@ -783,7 +908,10 @@ public class MapCreaterSubWindow : EditorWindow
         {
             string[] tmps = data.Split('/');
             string fileName = tmps[tmps.Length - 1];
-            return fileName.Split('.')[0];
+            if (fileName.IndexOf("areachange") > -1)
+                return fileName.Replace(".png", "");
+            else
+                return fileName.Split('.')[0];
         }
         else
             return "";
