@@ -21,6 +21,10 @@ public class MapCreater : EditorWindow
 	private string outputFileName;
     // 選択した画像パス
     private string selectedImagePath;
+    // エリアチェンジ用
+    private string areaChangeMapName;
+    private string areaChangeMapX;
+    private string areaChangeMapY;
     // ウィンドウのサイズ
     const float WINDOW_W = 300.0f;
     const float WINDOW_H = 700.0f;
@@ -69,6 +73,7 @@ public class MapCreater : EditorWindow
         }
 
         outputDirectory = AssetDatabase.LoadMainAssetAtPath("Assets/Map");
+        areaChangeMapName = "";
     }
 
     void OnGUI()
@@ -122,12 +127,13 @@ public class MapCreater : EditorWindow
         float y2 = 0.0f;
         float w = 50.0f;
         float h = 50.0f;
-        float maxW = 250.0f;
+        float winMaxW = Screen.width - 40;
+        float maxW = winMaxW - 50;
 
         GUILayout.Label("ツールチップ : ", GUILayout.Width(110));
         EditorGUILayout.BeginVertical(GUI.skin.box);
         Rect workArea = GUILayoutUtility.GetRect(10, 10000, 10, 50);
-        ToolSelectBoxScrollPos = GUI.BeginScrollView(workArea, ToolSelectBoxScrollPos, new Rect(0, 0, 300, 50), false, false);
+        ToolSelectBoxScrollPos = GUI.BeginScrollView(workArea, ToolSelectBoxScrollPos, new Rect(0, 0, winMaxW, 50), false, false);
 
         string path = "Assets/Editor/MapCreater/eraser.png";
         Texture2D tex = (Texture2D)AssetDatabase.LoadAssetAtPath(path, typeof(Texture2D));
@@ -156,13 +162,31 @@ public class MapCreater : EditorWindow
         }
         GUILayout.EndArea();
 
+        path = "Assets/Editor/MapCreater/start.png";
+        tex = (Texture2D)AssetDatabase.LoadAssetAtPath(path, typeof(Texture2D));
+        GUILayout.BeginArea(new Rect(x + w * 3, y, w, h));
+        if (GUILayout.Button(tex, GUILayout.MaxWidth(w), GUILayout.MaxHeight(h), GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false)))
+        {
+            selectedImagePath = path;
+        }
+        GUILayout.EndArea();
+
+        path = "Assets/Editor/MapCreater/areachange.png";
+        tex = (Texture2D)AssetDatabase.LoadAssetAtPath(path, typeof(Texture2D));
+        GUILayout.BeginArea(new Rect(x + w * 4, y, w, h));
+        if (GUILayout.Button(tex, GUILayout.MaxWidth(w), GUILayout.MaxHeight(h), GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false)))
+        {
+            selectedImagePath = path;
+        }
+        GUILayout.EndArea();
+
         GUI.EndScrollView();
         EditorGUILayout.EndVertical();
 
         GUILayout.Label("マップチップ : ", GUILayout.Width(110));
         EditorGUILayout.BeginVertical(GUI.skin.box);
-        workArea = GUILayoutUtility.GetRect(10, 10000, 10, 300);
-        ChipSelectBoxScrollPos = GUI.BeginScrollView(workArea, ChipSelectBoxScrollPos, new Rect(0, 0, 300, h * (mapChipList.Count / (maxW / h))), false, true);
+        workArea = GUILayoutUtility.GetRect(10, 10000, 10, 200);
+        ChipSelectBoxScrollPos = GUI.BeginScrollView(workArea, ChipSelectBoxScrollPos, new Rect(0, 0, winMaxW, h * (mapChipList.Count / (maxW / h))), false, true);
 
         foreach (string d in mapChipList)
         {
@@ -189,7 +213,7 @@ public class MapCreater : EditorWindow
         GUILayout.Label("オブジェクト : ", GUILayout.Width(110));
         EditorGUILayout.BeginVertical(GUI.skin.box);
         workArea = GUILayoutUtility.GetRect(10, 10000, 10, 200);
-        ObjectSelectBoxScrollPos = GUI.BeginScrollView(workArea, ObjectSelectBoxScrollPos, new Rect(0, 0, 0, h * (mapObjectList.Count / (maxW / h))), false, true);
+        ObjectSelectBoxScrollPos = GUI.BeginScrollView(workArea, ObjectSelectBoxScrollPos, new Rect(0, 0, winMaxW, h * (mapObjectList.Count / (maxW / h))), false, true);
 
         foreach (string d in mapObjectList)
         {
@@ -219,9 +243,26 @@ public class MapCreater : EditorWindow
     {
 		if (selectedImagePath != null)
         {
-			Texture2D tex = (Texture2D)AssetDatabase.LoadAssetAtPath(selectedImagePath, typeof(Texture2D));
 			GUILayout.Label("select : " + selectedImagePath);
+            EditorGUILayout.BeginHorizontal();
+			Texture2D tex = (Texture2D)AssetDatabase.LoadAssetAtPath(selectedImagePath, typeof(Texture2D));
 			GUILayout.Box(tex);
+            if (selectedImagePath.IndexOf("areachange") > -1)
+            {
+                EditorGUILayout.BeginVertical();
+                GUILayout.Label("エリア移動先（マップ名） : ", GUILayout.Width(150));
+                areaChangeMapName = (string)EditorGUILayout.TextField(areaChangeMapName);
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Label("X（マス） : ", GUILayout.Width(150));
+                areaChangeMapX = (string)EditorGUILayout.TextField(areaChangeMapX);
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Label("Y （マス）: ", GUILayout.Width(150));
+                areaChangeMapY = (string)EditorGUILayout.TextField(areaChangeMapY);
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.EndVertical();
+            }
+            EditorGUILayout.EndHorizontal();
 		}
         else
         {
@@ -268,11 +309,26 @@ public class MapCreater : EditorWindow
 
     public float GridSize
     {
-		get{ return gridSize; }
+		get { return gridSize; }
 	}
 
-	// 出力先パスを生成
-	public string OutputFilePath()
+    public string AreaChangeMapName
+    {
+        get { return areaChangeMapName; }
+    }
+
+    public string AreaChangeMapX
+    {
+        get { return areaChangeMapX; }
+    }
+
+    public string AreaChangeMapY
+    {
+        get { return areaChangeMapY; }
+    }
+
+    // 出力先パスを生成
+    public string OutputFilePath()
     {
 		string resultPath = "";
 
@@ -291,8 +347,8 @@ public class MapCreater : EditorWindow
 public class MapCreaterSubWindow : EditorWindow
 {
     // マップウィンドウのサイズ
-    const float WINDOW_W = 850.0f;
-    const float WINDOW_H = 650.0f;
+    const float WINDOW_W = 150.0f;
+    const float WINDOW_H = 150.0f;
     // マップのグリッド数
     private int mapSizeX = 0;
     private int mapSizeY = 0;
@@ -349,47 +405,103 @@ public class MapCreaterSubWindow : EditorWindow
         EditorGUILayout.BeginVertical(GUI.skin.box);
         Rect workArea = GUILayoutUtility.GetRect(10, 10000, 10, 520);
         ScrollPos = GUI.BeginScrollView(workArea, ScrollPos, new Rect(0, 0, mapSizeX * gridSize, mapSizeY * gridSize), false, false);
+        Vector2 pos = Event.current.mousePosition;
+
+        int mouseX = -1;
+        int mouseY = -1;
+        int xx;
+        string status = "";
 
         // グリッド線を描画する
         for (int yy = 0; yy < mapSizeY; yy++)
         {
-            for (int xx = 0; xx < mapSizeX; xx++)
+            for (xx = 0; xx < mapSizeX; xx++)
             {
                 DrawGridLine(gridRect[yy, xx]);
             }
         }
 
-        // クリックされた位置を探して、その場所に画像データを入れる
-        Event e = Event.current;
-        if (e.type == EventType.MouseDown)
+        // x位置を先に計算して、計算回数を減らす
+        for (xx = 0; xx < mapSizeX; xx++)
         {
-            Vector2 pos = Event.current.mousePosition;
-            int xx;
-
-            // x位置を先に計算して、計算回数を減らす
-            for (xx = 0; xx < mapSizeX; xx++)
+            if (pos.x > mapSizeX * gridSize)
             {
-                Rect r = gridRect[0, xx];
-                if (r.x <= pos.x && pos.x <= r.x + r.width)
-                    break;
+                xx = mapSizeX - 1;
+                break;
+            }
+            else if (pos.x < 0)
+            {
+                xx = 0;
+                break;
             }
 
-            // 後はy位置だけ探す
-            for (int yy = 0; yy < mapSizeY; yy++)
+            Rect r = gridRect[0, xx];
+            if (r.x <= pos.x && pos.x <= r.x + r.width)
+                break;
+        }
+
+        // 後はy位置だけ探す
+        for (int yy = 0; yy < mapSizeY; yy++)
+        {
+            if (pos.y > mapSizeY * gridSize)
             {
-                if (gridRect[yy, xx].Contains(pos))
+                yy = mapSizeY - 1;
+                break;
+            }
+            else if (pos.y < 0)
+            {
+                yy = 0;
+                break;
+            }
+
+            if (gridRect[yy, xx].Contains(pos))
+            {
+                mouseX = xx;
+                mouseY = yy;
+            }
+        }
+
+        // クリックされた位置を探して、その場所に画像データを入れる
+        Event e = Event.current;
+        if (e.type == EventType.MouseDrag || e.type == EventType.MouseDown)
+        {
+            if (mouseX != -1 && mouseY != -1)
+            {
+                if (parent.SelectedImagePath != null)
                 {
-                    if (parent.SelectedImagePath == null)
-                        break;
-
                     // 消しゴムの時はデータを消す
-                    if (parent.SelectedImagePath.IndexOf("eraser.png") > -1)
-                        map[yy, xx] = "";
-                    else
-                        map[yy, xx] = parent.SelectedImagePath;
+                    if (parent.SelectedImagePath.IndexOf("eraser") > -1)
+                        map[mouseY, mouseX] = "";
+                    else if (parent.SelectedImagePath.IndexOf("start") > -1)
+                    {
+                        for (int yyy = 0; yyy < mapSizeY; yyy++)
+                        {
+                            for (int xxx = 0; xxx < mapSizeX; xxx++)
+                            {
+                                if (map[yyy, xxx] == parent.SelectedImagePath)
+                                {
+                                    map[yyy, xxx] = "";
+                                }
+                            }
+                        }
 
-                    Repaint();
-                    break;
+                        map[mouseY, mouseX] = parent.SelectedImagePath;
+                    }
+                    else if (parent.SelectedImagePath.IndexOf("areachange") > -1)
+                    {
+                        if ((parent.AreaChangeMapName == "" || parent.AreaChangeMapName == null) ||
+                            (parent.AreaChangeMapX == "" || parent.AreaChangeMapX == null) ||
+                            (parent.AreaChangeMapY == "" || parent.AreaChangeMapY == null))
+                        {
+                            EditorUtility.DisplayDialog("MapCreater エラー", "移動先マップ名/X座標/Y座標が入力されていません！", "ok");
+                        }
+                        else
+                        {
+                            map[mouseY, mouseX] = parent.SelectedImagePath + "|" + parent.AreaChangeMapName + ":" + parent.AreaChangeMapX + ":" + parent.AreaChangeMapY;
+                        }
+                    }
+                    else
+                        map[mouseY, mouseX] = parent.SelectedImagePath;
                 }
             }
         }
@@ -398,14 +510,47 @@ public class MapCreaterSubWindow : EditorWindow
 
         }
 
+        if (mouseX != -1 && mouseY != -1)
+        {
+            string sta = map[mouseY, mouseX];
+            string[] stas = sta.Split('|');
+
+            if (stas[0].IndexOf("areachange") > -1)
+            {
+                string[] maps = stas[1].Split(':');
+                string mapName = maps[0];
+                int mapX = int.Parse(maps[1]);
+                int mapY = int.Parse(maps[2]);
+
+                status = "移動先マップ : " + mapName + " / X : " + mapX + " / Y : " + mapY;
+            }
+        }
+        else
+        {
+            if (mouseX == -1)
+                mouseX = 0;
+
+            if (mouseY == -1)
+                mouseY = 0;
+        }
+
         // 選択した画像を描画する
         for (int yy = 0; yy < mapSizeY; yy++)
         {
-            for (int xx = 0; xx < mapSizeX; xx++)
+            for (xx = 0; xx < mapSizeX; xx++)
             {
                 if (map[yy, xx] != null && map[yy, xx].Length > 0)
                 {
-                    Texture2D tex = (Texture2D)AssetDatabase.LoadAssetAtPath(map[yy, xx], typeof(Texture2D));
+                    string sta = map[yy, xx];
+                    string[]  stas = sta.Split('|');
+                    string path = map[yy, xx];
+
+                    if (stas[0].IndexOf("areachange") > -1)
+                    {
+                        path = stas[0];
+                    }
+
+                    Texture2D tex = (Texture2D)AssetDatabase.LoadAssetAtPath(path, typeof(Texture2D));
                     GUI.DrawTexture(gridRect[yy, xx], tex);
                 }
             }
@@ -413,11 +558,25 @@ public class MapCreaterSubWindow : EditorWindow
         GUI.EndScrollView();
         EditorGUILayout.EndVertical();
 
+        EditorGUILayout.BeginVertical();
+        GUILayout.Label("X : " + mouseX + " / Y : " + mouseY, GUILayout.Width(200));
+        GUILayout.Label("MapChipStatus : " + status, GUILayout.Width(500));
+        EditorGUILayout.EndVertical();
+
+        EditorGUILayout.BeginHorizontal();
         // 出力ボタン
-        if (GUILayout.Button("Output File", GUILayout.MinHeight(50)))
+        if (GUILayout.Button("保存", GUILayout.MinHeight(50)))
         {
             OutputFile();
         }
+
+        // 開くボタン
+        if (GUILayout.Button("開く", GUILayout.MinHeight(50)))
+        {
+            OpenFile();
+        }
+        EditorGUILayout.EndHorizontal();
+        Repaint();
     }
 
     // グリッドデータを生成
@@ -480,6 +639,13 @@ public class MapCreaterSubWindow : EditorWindow
     {
         string path = parent.OutputFilePath();
 
+        if (System.IO.File.Exists(path))
+        {
+            System.IO.FileStream st = new System.IO.FileStream(path, FileMode.Open);
+            st.SetLength(0);
+            st.Close();
+        }
+
         FileInfo fileInfo = new FileInfo(path);
         StreamWriter sw = fileInfo.AppendText();
         sw.WriteLine(GetMapStrFormat());
@@ -488,6 +654,12 @@ public class MapCreaterSubWindow : EditorWindow
 
         // 完了ポップアップ
         EditorUtility.DisplayDialog("MapCreater", "output file success\n" + path, "ok");
+    }
+
+    // ファイルを開く
+    private void OpenFile()
+    {
+        
     }
 
     // 出力するマップデータ整形
