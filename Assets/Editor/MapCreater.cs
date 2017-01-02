@@ -20,7 +20,8 @@ public class MapCreater : EditorWindow
 	// 出力ファイル名
 	private string outputFileName;
     // 選択した画像パス
-    private string selectedImagePath;
+    private string selectedLeftImagePath;
+    private string selectedRightImagePath;
     // エリアチェンジ用
     private string areaChangeMapName;
     private string areaChangeMapX;
@@ -111,7 +112,8 @@ public class MapCreater : EditorWindow
 
         DrawMapWindowButton();
         SelectChipBox();
-        DrawSelectedImage();
+        DrawSelectedImage("left");
+        DrawSelectedImage("right");
 
         if (GUILayout.Button("Chip Reload", GUILayout.Height(50)))
         {
@@ -140,7 +142,15 @@ public class MapCreater : EditorWindow
         GUILayout.BeginArea(new Rect(x, y, w, h));
         if (GUILayout.Button(tex, GUILayout.MaxWidth(w), GUILayout.MaxHeight(h), GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false)))
         {
-            selectedImagePath = path;
+            Event e = Event.current;
+            if (e.button == 1)
+            {
+                selectedRightImagePath = path;
+            }
+            else
+            {
+                selectedLeftImagePath = path;
+            }
         }
         GUILayout.EndArea();
 
@@ -167,7 +177,15 @@ public class MapCreater : EditorWindow
         GUILayout.BeginArea(new Rect(x + w * 3, y, w, h));
         if (GUILayout.Button(tex, GUILayout.MaxWidth(w), GUILayout.MaxHeight(h), GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false)))
         {
-            selectedImagePath = path;
+            Event e = Event.current;
+            if (e.button == 1)
+            {
+                selectedRightImagePath = path;
+            }
+            else
+            {
+                selectedLeftImagePath = path;
+            }
         }
         GUILayout.EndArea();
 
@@ -176,7 +194,15 @@ public class MapCreater : EditorWindow
         GUILayout.BeginArea(new Rect(x + w * 4, y, w, h));
         if (GUILayout.Button(tex, GUILayout.MaxWidth(w), GUILayout.MaxHeight(h), GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false)))
         {
-            selectedImagePath = path;
+            Event e = Event.current;
+            if (e.button == 1)
+            {
+                selectedRightImagePath = path;
+            }
+            else
+            {
+                selectedLeftImagePath = path;
+            }
         }
         GUILayout.EndArea();
 
@@ -201,7 +227,15 @@ public class MapCreater : EditorWindow
             GUILayout.BeginArea(new Rect(x, y, w, h));
             if (GUILayout.Button(tex, GUILayout.MaxWidth(w), GUILayout.MaxHeight(h), GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false)))
             {
-                selectedImagePath = d;
+                Event e = Event.current;
+                if (e.button == 1)
+                {
+                    selectedRightImagePath = d;
+                }
+                else
+                {
+                    selectedLeftImagePath = d;
+                }
             }
             GUILayout.EndArea();
             x += w;
@@ -228,7 +262,15 @@ public class MapCreater : EditorWindow
             GUILayout.BeginArea(new Rect(x2, y2, w, h));
             if (GUILayout.Button(tex, GUILayout.MaxWidth(w), GUILayout.MaxHeight(h), GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false)))
             {
-                selectedImagePath = d;
+                Event e = Event.current;
+                if (e.button == 1)
+                {
+                    selectedRightImagePath = d;
+                }
+                else
+                {
+                    selectedLeftImagePath = d;
+                }
             }
             GUILayout.EndArea();
             x2 += w;
@@ -239,11 +281,23 @@ public class MapCreater : EditorWindow
     }
 
     // 選択した画像データを表示
-    private void DrawSelectedImage()
+    private void DrawSelectedImage(string mode)
     {
+        string selectedImagePath = "";
+
+        switch (mode)
+        {
+            case "left" :
+                selectedImagePath = selectedLeftImagePath;
+                break;
+            case "right":
+                selectedImagePath = selectedRightImagePath;
+                break;
+        }
+
 		if (selectedImagePath != null)
         {
-			GUILayout.Label("select : " + selectedImagePath);
+			GUILayout.Label("select " + mode + " : " + selectedImagePath);
             EditorGUILayout.BeginHorizontal();
 			Texture2D tex = (Texture2D)AssetDatabase.LoadAssetAtPath(selectedImagePath, typeof(Texture2D));
 			GUILayout.Box(tex);
@@ -267,7 +321,7 @@ public class MapCreater : EditorWindow
         else
         {
             Texture2D tex = (Texture2D)AssetDatabase.LoadAssetAtPath("Assets/Editor/MapCreater/none.png", typeof(Texture2D));
-            GUILayout.Label("select : ");
+            GUILayout.Label("select " + mode + " : ");
             GUILayout.Box(tex);
         }
     }
@@ -292,9 +346,14 @@ public class MapCreater : EditorWindow
 
     }
 
-    public string SelectedImagePath
+    public string SelectedLeftImagePath
     {
-        get { return selectedImagePath; }
+        get { return selectedLeftImagePath; }
+    }
+
+    public string SelectedRightImagePath
+    {
+        get { return selectedRightImagePath; }
     }
 
     public int MapSizeX
@@ -463,31 +522,31 @@ public class MapCreaterSubWindow : EditorWindow
 
         // クリックされた位置を探して、その場所に画像データを入れる
         Event e = Event.current;
-        if (e.type == EventType.MouseDrag || e.type == EventType.MouseDown)
+        if (e.button == 1)
         {
             if (mouseX != -1 && mouseY != -1)
             {
-                if (parent.SelectedImagePath != null)
+                if (parent.SelectedRightImagePath != null)
                 {
                     // 消しゴムの時はデータを消す
-                    if (parent.SelectedImagePath.IndexOf("eraser") > -1)
+                    if (parent.SelectedRightImagePath.IndexOf("eraser") > -1)
                         map[mouseY, mouseX] = "";
-                    else if (parent.SelectedImagePath.IndexOf("start") > -1)
+                    else if (parent.SelectedRightImagePath.IndexOf("start") > -1)
                     {
                         for (int yyy = 0; yyy < mapSizeY; yyy++)
                         {
                             for (int xxx = 0; xxx < mapSizeX; xxx++)
                             {
-                                if (map[yyy, xxx] == parent.SelectedImagePath)
+                                if (map[yyy, xxx] == parent.SelectedRightImagePath)
                                 {
                                     map[yyy, xxx] = "";
                                 }
                             }
                         }
 
-                        map[mouseY, mouseX] = parent.SelectedImagePath;
+                        map[mouseY, mouseX] = parent.SelectedRightImagePath;
                     }
-                    else if (parent.SelectedImagePath.IndexOf("areachange") > -1)
+                    else if (parent.SelectedRightImagePath.IndexOf("areachange") > -1)
                     {
                         if ((parent.AreaChangeMapName == "" || parent.AreaChangeMapName == null) ||
                             (parent.AreaChangeMapX == "" || parent.AreaChangeMapX == null) ||
@@ -497,17 +556,55 @@ public class MapCreaterSubWindow : EditorWindow
                         }
                         else
                         {
-                            map[mouseY, mouseX] = parent.SelectedImagePath + "|" + parent.AreaChangeMapName + ":" + parent.AreaChangeMapX + ":" + parent.AreaChangeMapY;
+                            map[mouseY, mouseX] = parent.SelectedRightImagePath + "|" + parent.AreaChangeMapName + ":" + parent.AreaChangeMapX + ":" + parent.AreaChangeMapY;
                         }
                     }
                     else
-                        map[mouseY, mouseX] = parent.SelectedImagePath;
+                        map[mouseY, mouseX] = parent.SelectedRightImagePath;
                 }
             }
         }
-        else if (e.type == EventType.MouseDrag)
+        else if (e.type == EventType.MouseDrag || e.type == EventType.MouseDown)
         {
+            if (mouseX != -1 && mouseY != -1)
+            {
+                if (parent.SelectedLeftImagePath != null)
+                {
+                    // 消しゴムの時はデータを消す
+                    if (parent.SelectedLeftImagePath.IndexOf("eraser") > -1)
+                        map[mouseY, mouseX] = "";
+                    else if (parent.SelectedLeftImagePath.IndexOf("start") > -1)
+                    {
+                        for (int yyy = 0; yyy < mapSizeY; yyy++)
+                        {
+                            for (int xxx = 0; xxx < mapSizeX; xxx++)
+                            {
+                                if (map[yyy, xxx] == parent.SelectedLeftImagePath)
+                                {
+                                    map[yyy, xxx] = "";
+                                }
+                            }
+                        }
 
+                        map[mouseY, mouseX] = parent.SelectedLeftImagePath;
+                    }
+                    else if (parent.SelectedLeftImagePath.IndexOf("areachange") > -1)
+                    {
+                        if ((parent.AreaChangeMapName == "" || parent.AreaChangeMapName == null) ||
+                            (parent.AreaChangeMapX == "" || parent.AreaChangeMapX == null) ||
+                            (parent.AreaChangeMapY == "" || parent.AreaChangeMapY == null))
+                        {
+                            EditorUtility.DisplayDialog("MapCreater エラー", "移動先マップ名/X座標/Y座標が入力されていません！", "ok");
+                        }
+                        else
+                        {
+                            map[mouseY, mouseX] = parent.SelectedLeftImagePath + "|" + parent.AreaChangeMapName + ":" + parent.AreaChangeMapX + ":" + parent.AreaChangeMapY;
+                        }
+                    }
+                    else
+                        map[mouseY, mouseX] = parent.SelectedLeftImagePath;
+                }
+            }
         }
 
         if (mouseX != -1 && mouseY != -1)
