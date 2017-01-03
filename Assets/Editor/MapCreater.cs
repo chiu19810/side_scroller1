@@ -326,6 +326,17 @@ public class MapCreater : EditorWindow
     {
         if (GUILayout.Button("Open Map Editor", GUILayout.Height(50)))
         {
+            if (subWindow != null)
+            {
+                if (subWindow.MapSaveFlag)
+                {
+                    if (!EditorUtility.DisplayDialog("MapCreater 警告", "変更が保存されていませんが、新しくマップウィンドウを開きますか？", " はい ", " いいえ "))
+                    {
+                        return;
+                    }
+                }
+            }
+
 			subWindow = MapCreaterSubWindow.WillAppear(this);
 			subWindow.Focus();
 		}
@@ -450,6 +461,19 @@ public class MapCreaterSubWindow : EditorWindow
     // 親ウィンドウの参照を持つ
     private MapCreater parent;
 
+    private bool mapSaveFlag;
+    private List<bool> mapPrevSaveFlagList = new List<bool>();
+    private List<bool> mapNextSaveFlagList = new List<bool>();
+
+    private string[,] mapSave;
+
+    private List<string[,]> mapPrevList = new List<string[,]>();
+    private List<string[,]> mapNextList = new List<string[,]>();
+
+    private string[,] oldMap = null;
+    private bool prevFlag;
+    private bool nextFlag;
+
     private Vector2 ScrollPos = Vector2.zero;
 
     // サブウィンドウを開く
@@ -487,6 +511,15 @@ public class MapCreaterSubWindow : EditorWindow
 
         // グリッドデータを生成
         gridRect = CreateGrid(mapSizeY, mapSizeX);
+
+        mapSaveFlag = false;
+        prevFlag = false;
+        nextFlag = false;
+        mapPrevList.Clear();
+        mapNextList.Clear();
+        mapPrevSaveFlagList.Clear();
+        mapNextSaveFlagList.Clear();
+        mapSave = (string[,]) map.Clone();
     }
 
     public void GridSizeUpdate()
@@ -556,10 +589,19 @@ public class MapCreaterSubWindow : EditorWindow
             }
         }
 
-        // クリックされた位置を探して、その場所に画像データを入れる
         Event e = Event.current;
+
+        if (e.type != EventType.MouseDown && e.type != EventType.MouseDrag && oldMap != null)
+        {
+            mapPrevList.Add((string[,]) oldMap.Clone());
+            mapNextList.Clear();
+            oldMap = null;
+        }
+
         if (e.type == EventType.ScrollWheel)
         {
+            // ホイールで拡大/縮小
+
             if (e.delta[1] == 3)
             {
                 parent.SetGridSize(parent.GridSize + 5);
@@ -576,109 +618,118 @@ public class MapCreaterSubWindow : EditorWindow
 
             GridSizeUpdate();
             Repaint();
-        }
-        else if (e.button == 1)
-        {
-            if (mouseX != -1 && mouseY != -1)
-            {
-                if (parent.SelectedRightImagePath != null)
-                {
-                    // 消しゴムの時はデータを消す
-                    if (parent.SelectedRightImagePath.IndexOf("eraser") > -1)
-                        map[mouseY, mouseX] = "";
-                    else if (parent.SelectedRightImagePath.IndexOf("start") > -1)
-                    {
-                        for (int yyy = 0; yyy < mapSizeY; yyy++)
-                        {
-                            for (int xxx = 0; xxx < mapSizeX; xxx++)
-                            {
-                                if (map[yyy, xxx] == parent.SelectedRightImagePath)
-                                {
-                                    map[yyy, xxx] = "";
-                                }
-                            }
-                        }
-
-                        map[mouseY, mouseX] = parent.SelectedRightImagePath;
-                    }
-                    else if (parent.SelectedRightImagePath.IndexOf("areachange") > -1)
-                    {
-                        if ((parent.AreaChangeMapName == "" || parent.AreaChangeMapName == null) ||
-                            (parent.AreaChangeMapX == "" || parent.AreaChangeMapX == null) ||
-                            (parent.AreaChangeMapY == "" || parent.AreaChangeMapY == null))
-                        {
-                            EditorUtility.DisplayDialog("MapCreater エラー", "移動先マップ名/X座標/Y座標が入力されていません！", "ok");
-                        }
-                        else
-                        {
-                            map[mouseY, mouseX] = parent.SelectedRightImagePath + "|" + parent.AreaChangeMapName + ":" + parent.AreaChangeMapX + ":" + parent.AreaChangeMapY;
-                        }
-                    }
-                    else
-                        map[mouseY, mouseX] = parent.SelectedRightImagePath;
-                }
-            }
-        }
-        else if (e.type == EventType.MouseDown && e.button == 2)
-        {
-            if (mouseX != -1 && mouseY != -1)
-            {
-                string[] stas = map[mouseY, mouseX].Split('|');
-
-                if (map[mouseY, mouseX] != "")
-                {
-                    if (stas[0].IndexOf("areachange") > -1)
-                        parent.SetSelectedImagePath(stas[0]);
-                    else if (map[mouseY, mouseX].IndexOf("start") > -1)
-                        parent.SetSelectedImagePath(map[mouseY, mouseX]);
-                    else
-                        parent.SetSelectedImagePath(map[mouseY, mouseX]);
-
-                    parent.Repaint();
-                }
-            }
+            parent.Repaint();
         }
         else if (e.type == EventType.MouseDrag || e.type == EventType.MouseDown)
         {
-            if (mouseX != -1 && mouseY != -1 && e.button != 2)
+            if (mouseX != -1 && mouseY != -1)
             {
-                if (parent.SelectedLeftImagePath != null)
+                // 左クリック/右クリック
+                if (e.button == 0 || e.button == 1)
                 {
-                    // 消しゴムの時はデータを消す
-                    if (parent.SelectedLeftImagePath.IndexOf("eraser") > -1)
-                        map[mouseY, mouseX] = "";
-                    else if (parent.SelectedLeftImagePath.IndexOf("start") > -1)
+                    string path = "";
+
+                    if (e.button == 0)
+                        path = parent.SelectedLeftImagePath;
+                    else if (e.button == 1)
+                        path = parent.SelectedRightImagePath;
+
+                    if (path != null)
                     {
-                        for (int yyy = 0; yyy < mapSizeY; yyy++)
+                        bool flag = false;
+                        string[,] _oldmap = (string[,]) map.Clone();
+
+                        if (path.IndexOf("eraser") > -1)
                         {
-                            for (int xxx = 0; xxx < mapSizeX; xxx++)
+                            if (map[mouseY, mouseX] != "")
                             {
-                                if (map[yyy, xxx] == parent.SelectedLeftImagePath)
+                                flag = true;
+                                map[mouseY, mouseX] = "";
+                            }
+                        }
+                        else if (path.IndexOf("start") > -1)
+                        {
+                            for (int yyy = 0; yyy < mapSizeY; yyy++)
+                            {
+                                for (int xxx = 0; xxx < mapSizeX; xxx++)
                                 {
-                                    map[yyy, xxx] = "";
+                                    if (map[yyy, xxx] == path)
+                                    {
+                                        map[yyy, xxx] = "";
+                                    }
+                                }
+                            }
+
+                            if (map[mouseY, mouseX] != path)
+                            {
+                                flag = true;
+                                map[mouseY, mouseX] = path;
+                            }
+                        }
+                        else if (path.IndexOf("areachange") > -1)
+                        {
+                            if ((parent.AreaChangeMapName == "" || parent.AreaChangeMapName == null) ||
+                                (parent.AreaChangeMapX == "" || parent.AreaChangeMapX == null) ||
+                                (parent.AreaChangeMapY == "" || parent.AreaChangeMapY == null))
+                            {
+                                EditorUtility.DisplayDialog("MapCreater エラー", "移動先マップ名/X座標/Y座標が入力されていません！", "OK");
+                            }
+                            else
+                            {
+                                string set = path + "|" + parent.AreaChangeMapName + ":" + parent.AreaChangeMapX + ":" + parent.AreaChangeMapY;
+                                if (map[mouseY, mouseX] != set)
+                                {
+                                    flag = true;
+                                    map[mouseY, mouseX] = set;
                                 }
                             }
                         }
-
-                        map[mouseY, mouseX] = parent.SelectedLeftImagePath;
-                    }
-                    else if (parent.SelectedLeftImagePath.IndexOf("areachange") > -1)
-                    {
-                        if ((parent.AreaChangeMapName == "" || parent.AreaChangeMapName == null) ||
-                            (parent.AreaChangeMapX == "" || parent.AreaChangeMapX == null) ||
-                            (parent.AreaChangeMapY == "" || parent.AreaChangeMapY == null))
-                        {
-                            EditorUtility.DisplayDialog("MapCreater エラー", "移動先マップ名/X座標/Y座標が入力されていません！", "ok");
-                        }
                         else
                         {
-                            map[mouseY, mouseX] = parent.SelectedLeftImagePath + "|" + parent.AreaChangeMapName + ":" + parent.AreaChangeMapX + ":" + parent.AreaChangeMapY;
+                            if (map[mouseY, mouseX] != path)
+                            {
+                                flag = true;
+                                map[mouseY, mouseX] = path;
+                            }
+                        }
+
+                        if (flag)
+                        {
+                            if (e.type == EventType.mouseDown)
+                            {
+                                oldMap = _oldmap;
+                                mapPrevSaveFlagList.Add(mapSaveFlag);
+                                mapNextSaveFlagList.Clear();
+                                mapSaveFlag = true;
+                            }
                         }
                     }
-                    else
-                        map[mouseY, mouseX] = parent.SelectedLeftImagePath;
+                }
+                else if (e.button == 2)
+                {
+                    // 中クリック
+                    string[] stas = map[mouseY, mouseX].Split('|');
+
+                    if (map[mouseY, mouseX] != "")
+                    {
+                        if (stas[0].IndexOf("areachange") > -1)
+                            parent.SetSelectedImagePath(stas[0]);
+                        else if (map[mouseY, mouseX].IndexOf("start") > -1)
+                            parent.SetSelectedImagePath(map[mouseY, mouseX]);
+                        else
+                            parent.SetSelectedImagePath(map[mouseY, mouseX]);
+
+                        parent.Repaint();
+                    }
                 }
             }
+        }
+
+        if (e.type == EventType.MouseUp && oldMap != null)
+        {
+            mapPrevList.Add((string[,]) oldMap.Clone());
+            mapNextList.Clear();
+            oldMap = null;
         }
 
         if (mouseX != -1 && mouseY != -1)
@@ -713,7 +764,7 @@ public class MapCreaterSubWindow : EditorWindow
                 if (map[yy, xx] != null && map[yy, xx].Length > 0)
                 {
                     string sta = map[yy, xx];
-                    string[]  stas = sta.Split('|');
+                    string[] stas = sta.Split('|');
                     string path = map[yy, xx];
 
                     if (stas[0].IndexOf("areachange") > -1)
@@ -729,10 +780,53 @@ public class MapCreaterSubWindow : EditorWindow
         GUI.EndScrollView();
         EditorGUILayout.EndVertical();
 
+        EditorGUILayout.BeginHorizontal();
         EditorGUILayout.BeginVertical();
-        GUILayout.Label("X : " + mouseX + " / Y : " + mouseY, GUILayout.Width(200));
+        GUILayout.Label("GridSize: " + gridSize + " / X : " + mouseX + " / Y : " + mouseY, GUILayout.Width(200));
         GUILayout.Label("MapChipStatus : " + status, GUILayout.Width(500));
         EditorGUILayout.EndVertical();
+        GUILayout.FlexibleSpace();
+
+        if (mapPrevList.Count > 0)
+            prevFlag = true;
+        else
+            prevFlag = false;
+        if (mapNextList.Count > 0)
+            nextFlag = true;
+        else
+            nextFlag = false;
+
+        if (!prevFlag)
+            EditorGUI.BeginDisabledGroup(true);
+        if (GUILayout.Button("元に戻す", GUILayout.Width(100), GUILayout.Height(30)))
+        {
+            mapNextList.Add((string[,]) map.Clone());
+            map = (string[,]) mapPrevList[mapPrevList.Count -1].Clone();
+            mapPrevList.RemoveAt(mapPrevList.Count -1);
+
+            mapNextSaveFlagList.Add(mapSaveFlag);
+            mapSaveFlag = mapPrevSaveFlagList[mapPrevSaveFlagList.Count - 1];
+            mapPrevSaveFlagList.RemoveAt(mapPrevSaveFlagList.Count - 1);
+        }
+        if (!prevFlag)
+            EditorGUI.EndDisabledGroup();
+
+        if (!nextFlag)
+            EditorGUI.BeginDisabledGroup(true);
+        if (GUILayout.Button("やり直し", GUILayout.Width(100), GUILayout.Height(30)))
+        {
+            mapPrevList.Add((string[,]) map.Clone());
+            map = (string[,]) mapNextList[mapNextList.Count -1].Clone();
+            mapNextList.RemoveAt(mapNextList.Count -1);
+
+            mapPrevSaveFlagList.Add(mapSaveFlag);
+            mapSaveFlag = mapNextSaveFlagList[mapNextSaveFlagList.Count - 1];
+            mapNextSaveFlagList.RemoveAt(mapNextSaveFlagList.Count - 1);
+        }
+        if (!nextFlag)
+            EditorGUI.EndDisabledGroup();
+
+        EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.BeginHorizontal();
         // 出力ボタン
@@ -812,9 +906,12 @@ public class MapCreaterSubWindow : EditorWindow
 
         if (parent.OutputFileName == "")
         {
-            EditorUtility.DisplayDialog("MapCreater エラー", "ファイル名が設定されていません！", "ok");
+            EditorUtility.DisplayDialog("MapCreater エラー", "ファイル名が設定されていません！", "OK");
             return;
         }
+
+        if (!EditorUtility.DisplayDialog("MapCreater", path + " に保存します。\nよろしいですか？", " はい ", " いいえ "))
+            return;
 
         if (System.IO.File.Exists(path))
         {
@@ -829,8 +926,11 @@ public class MapCreaterSubWindow : EditorWindow
         sw.Flush();
         sw.Close();
 
+        mapSaveFlag = false;
+        mapSave = (string[,])map.Clone();
+
         // 完了ポップアップ
-        EditorUtility.DisplayDialog("MapCreater", "output file success\n" + path, "ok");
+        EditorUtility.DisplayDialog("MapCreater", "保存が完了しました。\n" + path, "OK");
     }
 
     // ファイルを開く
@@ -878,8 +978,8 @@ public class MapCreaterSubWindow : EditorWindow
                 }
             }
 
+            mapSave = (string[,]) map.Clone();
             gridRect = CreateGrid(mapSizeY, mapSizeX);
-
             Repaint();
         }
     }
@@ -915,5 +1015,10 @@ public class MapCreaterSubWindow : EditorWindow
         }
         else
             return "";
+    }
+
+    public bool MapSaveFlag
+    {
+        get { return mapSaveFlag; }
     }
 }

@@ -5,7 +5,7 @@ Ground,Ground,Ground,Ground,Ground,,,,Ground,,,,,,,,,,Ground,,,,,,,,,,,,,,,,,,,,
 Ground,,Ground,,Ground,,,,Ground,,,,,,,,,,Ground,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 Ground,,Ground,,Ground,,,,Ground,Ground,Ground,,,,,,,,areachange|a:4:4,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 ,,,,,,,,,,,,,,,,,,areachange|a:4:4,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-,,start,,,,,,,,,,,,,,,,areachange|a:4:4,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 ,,,,,,,,,,,,,,,,,,areachange|a:4:4,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,start,,,,,,,,,,,,,,,,areachange|a:4:4,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 Ground,Ground,Ground,Ground,Ground,Ground,Ground,Ground,Ground,Ground,Ground,Ground,Ground,Ground,Ground,Ground,Ground,Ground,Ground,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
