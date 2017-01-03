@@ -37,8 +37,8 @@ public class MapCreater : EditorWindow
     private Vector2 ToolSelectBoxScrollPos = Vector2.zero;
     private Vector2 ChipSelectBoxScrollPos = Vector2.zero;
     private Vector2 ObjectSelectBoxScrollPos = Vector2.zero;
-    private string chipSearchPath = "Assets/Prefabs/MapChip/";
-    private string objectSearchPath = "Assets/Prefabs/MapObject/";
+    private string chipSearchPath = "Assets/Resources/Prefabs/MapChip/";
+    private string objectSearchPath = "Assets/Resources/Prefabs/MapObject/";
 
     [UnityEditor.MenuItem("Window/MapCreater")]
 	static void ShowTestMainWindow(){
@@ -225,11 +225,11 @@ public class MapCreater : EditorWindow
                 Event e = Event.current;
                 if (e.button == 1)
                 {
-                    selectedRightImagePath = d;
+                    selectedRightImagePath = d + "|MapChip";
                 }
                 else
                 {
-                    selectedLeftImagePath = d;
+                    selectedLeftImagePath = d + "|MapChip";
                 }
             }
             GUILayout.EndArea();
@@ -260,11 +260,11 @@ public class MapCreater : EditorWindow
                 Event e = Event.current;
                 if (e.button == 1)
                 {
-                    selectedRightImagePath = d;
+                    selectedRightImagePath = d + "|MapObject";
                 }
                 else
                 {
-                    selectedLeftImagePath = d;
+                    selectedLeftImagePath = d + "|MapObject";
                 }
             }
             GUILayout.EndArea();
@@ -289,6 +289,8 @@ public class MapCreater : EditorWindow
                 selectedImagePath = selectedRightImagePath;
                 break;
         }
+
+        selectedImagePath = selectedImagePath.Split('|')[0];
 
 		if (selectedImagePath != null)
         {
@@ -668,15 +670,22 @@ public class MapCreaterSubWindow : EditorWindow
                         }
                         else if (path.IndexOf("areachange") > -1)
                         {
-                            if ((parent.AreaChangeMapName == "" || parent.AreaChangeMapName == null) ||
-                                (parent.AreaChangeMapX == "" || parent.AreaChangeMapX == null) ||
-                                (parent.AreaChangeMapY == "" || parent.AreaChangeMapY == null))
+                            string areaX = parent.AreaChangeMapX;
+                            string areaY = parent.AreaChangeMapY;
+
+                            if (areaX == "" || areaX == null)
+                                areaX = "-1";
+
+                            if (areaY == "" || areaY == null)
+                                areaY = "-1";
+
+                            if (parent.AreaChangeMapName == "" || parent.AreaChangeMapName == null)
                             {
                                 EditorUtility.DisplayDialog("MapCreater エラー", "移動先マップ名/X座標/Y座標が入力されていません！", "OK");
                             }
                             else
                             {
-                                string set = path + "|" + parent.AreaChangeMapName + ":" + parent.AreaChangeMapX + ":" + parent.AreaChangeMapY;
+                                string set = path + "|" + parent.AreaChangeMapName + ":" + areaX + ":" + areaY;
                                 if (map[mouseY, mouseX] != set)
                                 {
                                     flag = true;
@@ -712,12 +721,10 @@ public class MapCreaterSubWindow : EditorWindow
 
                     if (map[mouseY, mouseX] != "")
                     {
-                        if (stas[0].IndexOf("areachange") > -1)
-                            parent.SetSelectedImagePath(stas[0]);
-                        else if (map[mouseY, mouseX].IndexOf("start") > -1)
+                        if (map[mouseY, mouseX].IndexOf("start") > -1)
                             parent.SetSelectedImagePath(map[mouseY, mouseX]);
                         else
-                            parent.SetSelectedImagePath(map[mouseY, mouseX]);
+                            parent.SetSelectedImagePath(stas[0]);
 
                         parent.Repaint();
                     }
@@ -746,6 +753,14 @@ public class MapCreaterSubWindow : EditorWindow
 
                 status = "移動先マップ : " + mapName + " / X : " + mapX + " / Y : " + mapY;
             }
+            else if (!(stas[0].IndexOf("start") > -1))
+            {
+                if (stas.Length > 0)
+                {
+
+                }
+//                    status = stas[1];
+            }
         }
         else
         {
@@ -767,10 +782,8 @@ public class MapCreaterSubWindow : EditorWindow
                     string[] stas = sta.Split('|');
                     string path = map[yy, xx];
 
-                    if (stas[0].IndexOf("areachange") > -1)
-                    {
+                    if (!(stas[0].IndexOf("start") > -1))
                         path = stas[0];
-                    }
 
                     Texture2D tex = (Texture2D)AssetDatabase.LoadAssetAtPath(path, typeof(Texture2D));
                     GUI.DrawTexture(gridRect[yy, xx], tex);
@@ -972,7 +985,7 @@ public class MapCreaterSubWindow : EditorWindow
                     else if (text.Split('!')[i].Split(',')[j].IndexOf("areachange") > -1)
                         map[i, j] = "Assets/Editor/MapCreater/" + text.Split('!')[i].Split(',')[j].Split('|')[0] + ".png|" + text.Split('!')[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text.Split('!')[i].Split(',')[j].Split('|')[1].Split(':')[1] + ":" + text.Split('!')[i].Split(',')[j].Split('|')[1].Split(':')[2];
                     else if (text.Split('!')[i].Split(',')[j] != "")
-                        map[i, j] = "Assets/Textures/" + text.Split('!')[i].Split(',')[j] + ".png";
+                        map[i, j] = "Assets/Textures/" + text.Split('!')[i].Split(',')[j].Split('|')[0] + ".png|" + text.Split('!')[i].Split(',')[j].Split('|')[1];
                     else
                         map[i, j] = "";
                 }
@@ -1008,10 +1021,7 @@ public class MapCreaterSubWindow : EditorWindow
         {
             string[] tmps = data.Split('/');
             string fileName = tmps[tmps.Length - 1];
-            if (fileName.IndexOf("areachange") > -1)
-                return fileName.Replace(".png", "");
-            else
-                return fileName.Split('.')[0];
+            return fileName.Replace(".png", "");
         }
         else
             return "";

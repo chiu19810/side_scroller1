@@ -5,7 +5,7 @@ public class PlayerController : MonoBehaviour
 {
     private Animator acon;
     private Rigidbody2D rb;
-    private CircleCollider2D circleCollier2D;
+    private BoxCollider2D boxCollider2D;
     private bool isGround;
     private bool horiJumpFlag;
     private bool jumpMoveFlag;
@@ -14,6 +14,7 @@ public class PlayerController : MonoBehaviour
     private float horiFrame;
     private float idolFrame;
     private float moveSpeedChange;
+    private const float m_centerY = 0.32f;
 
     public LayerMask groundLayer;
     public float speed = -1;
@@ -31,7 +32,7 @@ public class PlayerController : MonoBehaviour
 
         acon = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
-        circleCollier2D = GetComponent<CircleCollider2D>();
+        boxCollider2D = GetComponent<BoxCollider2D>();
 
         isGround = false;
         horiJumpFlag = false;
@@ -52,8 +53,8 @@ public class PlayerController : MonoBehaviour
     void FixedUpdate()
     {
         Vector2 pos = transform.position;
-        Vector2 groundCheck = new Vector2(pos.x, pos.y - (circleCollier2D.radius * 1.5f));
-        Vector2 groundArea = new Vector2(circleCollier2D.radius * 0.49f, 0.05f);
+        Vector2 groundCheck = new Vector2(pos.x, pos.y - (m_centerY * transform.localScale.y));
+        Vector2 groundArea = new Vector2(boxCollider2D.size.x * 0.2f, 0.08f);
 
         isGround = Physics2D.OverlapArea(groundCheck + groundArea, groundCheck - groundArea, groundLayer);
     }
@@ -187,6 +188,23 @@ public class PlayerController : MonoBehaviour
         if (!horiJumpFlag && !jumpMoveFlag && !isGround)
             moveSpeedChange = speed / 1.5f;
 
-        transform.Translate(h * (speed - moveSpeedChange) * Time.deltaTime, 0, 0);
+        rb.velocity = new Vector2(h * (speed - moveSpeedChange), rb.velocity.y);
+    }
+
+    void OnTriggerStay2D(Collider2D collider)
+    {
+        if (collider.gameObject.tag == "AreaChange")
+        {
+            StageManager stage = GameObject.Find("StageManager").GetComponent<StageManager>();
+
+            string[] stas = collider.gameObject.name.Split(':');
+            float chipX = stage.chipSizeX;
+            float chipY = stage.chipSizeY;
+
+            stage.StageInit(stas[0]);
+
+            if (stas[1] != "-1" && stas[2] != "-1")
+                stage.GetPlayer.transform.position = new Vector2(chipX * int.Parse(stas[1]) + chipX / 2, chipY * int.Parse(stas[2]) + chipY / 2);
+        }
     }
 }
