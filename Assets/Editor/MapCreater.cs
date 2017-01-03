@@ -115,9 +115,13 @@ public class MapCreater : EditorWindow
         DrawSelectedImage("left");
         DrawSelectedImage("right");
 
-        if (GUILayout.Button("Chip Reload", GUILayout.Height(50)))
+        if (GUILayout.Button("Reload", GUILayout.Height(50)))
         {
             this.init();
+            Repaint();
+
+            if (subWindow != null)
+                subWindow.Repaint();
         }
     }
 
@@ -135,8 +139,6 @@ public class MapCreater : EditorWindow
         GUILayout.Label("ツールチップ : ", GUILayout.Width(110));
         EditorGUILayout.BeginVertical(GUI.skin.box);
         Rect workArea;
-        /*        Rect workArea = GUILayoutUtility.GetRect(10, 10000, 10, 50);
-                ToolSelectBoxScrollPos = GUI.BeginScrollView(workArea, ToolSelectBoxScrollPos, new Rect(0, 0, winMaxW, 50), false, false);*/
         ToolSelectBoxScrollPos = EditorGUILayout.BeginScrollView(ToolSelectBoxScrollPos, true, false, GUILayout.Height(75));
 
         EditorGUILayout.BeginHorizontal();
@@ -199,7 +201,6 @@ public class MapCreater : EditorWindow
             }
         }
 
-        //        GUI.EndScrollView();
         EditorGUILayout.EndHorizontal();
         EditorGUILayout.EndScrollView();
         EditorGUILayout.EndVertical();
@@ -290,10 +291,9 @@ public class MapCreater : EditorWindow
                 break;
         }
 
-        selectedImagePath = selectedImagePath.Split('|')[0];
-
 		if (selectedImagePath != null)
         {
+            selectedImagePath = selectedImagePath.Split('|')[0];
 			GUILayout.Label("select " + mode + " : " + selectedImagePath);
             EditorGUILayout.BeginHorizontal();
 			Texture2D tex = (Texture2D)AssetDatabase.LoadAssetAtPath(selectedImagePath, typeof(Texture2D));
@@ -541,6 +541,23 @@ public class MapCreaterSubWindow : EditorWindow
         int mouseY = -1;
         int xx;
         string status = "";
+
+        if (gridRect == null)
+        {
+            EditorUtility.DisplayDialog("MapCreater エラー", "MapCreaterが正常に終了されなかった為、\n編集中のマップデータが初期化されました。", "OK");
+
+            // マップデータを初期化
+            map = new string[mapSizeY, mapSizeX];
+            for (int i = 0; i < mapSizeY; i++)
+            {
+                for (int j = 0; j < mapSizeX; j++)
+                {
+                    map[i, j] = "";
+                }
+            }
+
+            GridSizeUpdate();
+        }
 
         // グリッド線を描画する
         for (int yy = 0; yy < mapSizeY; yy++)
