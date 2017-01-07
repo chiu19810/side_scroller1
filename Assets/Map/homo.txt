@@ -1,0 +1,11 @@
+,,,,,,,,,,,,,,,,,,Ground|MapChip,,,,,,,Ground|MapChip,,,,Ground|MapChip,,,,Ground|MapChip,,,,,,,,,,,,,,,,
+,,Ground|MapChip,,,start,,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,,,,,,,,Ground|MapChip,,,,,,,,,,,Ground|MapChip,,,,Ground|MapChip,,,,,,,,,,,,,,,,
+Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,,,,Ground|MapChip,,,,,,,,,,,,,,,,,,,,,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,,,,,,,,,,,,,,,,
+,,Ground|MapChip,,,,,,Ground|MapChip,,,,,,,,,,,,,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,,,,,,,,,,,,,,,,,,,,,,,,
+,,Ground|MapChip,,,,,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,,Ground|MapChip,Ground|MapChip,,,Ground|MapChip,Ground|MapChip,Ground|MapChip,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Ground|MapChip,,Ground|MapChip,,Ground|MapChip,,,,Ground|MapChip,,,,,,,,,,areachange|a:4:4,,,,,,,,,,,,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,,,Ground|MapChip,,,,,,,,,,,,,
+Ground|MapChip,,Ground|MapChip,,Ground|MapChip,,,,Ground|MapChip,Ground|MapChip,Ground|MapChip,,,,,,,,areachange|a:4:4,,,,,,,,,,,,,,,,,,Ground|MapChip,,,,,,,,,,,,,
+,,,,,,,,,,,,,,Ground|MapChip,,,,areachange|a:4:4,,,,,,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,,,,,,,,Ground|MapChip,,,,,,,,,,,,,
+,,,,,,,,,,,,,,Ground|MapChip,,,,areachange|a:4:4,,,,,,,,,,,,,,,,,,Ground|MapChip,,,,,,,,,,,,,
+Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,,,,,,,,,,,,
+

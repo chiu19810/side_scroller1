@@ -1,13 +1,13 @@
 fileFormatVersion: 2
-guid: 8b3fdd4515381494b907bed1b5adcd9b
-timeCreated: 1482730593
+guid: e7fb79d0739266d4aa3abc70f3a73f83
+timeCreated: 1482730586
 licenseType: Free
 TextureImporter:
   fileIDToRecycleName:
-    21300000: Player_Right_0
-    21300002: Player_Right_1
-    21300004: Player_Right_2
-    21300006: Player_Right_3
+    21300000: Player_RIdol_0
+    21300002: Player_RIdol_1
+    21300004: Player_RIdol_2
+    21300006: Player_RIdol_3
   serializedVersion: 2
   mipmaps:
     mipMapMode: 0
@@ -57,7 +57,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Player_Right_0
+      name: Player_RIdol_0
       rect:
         serializedVersion: 2
         x: 0
@@ -70,7 +70,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: Player_Right_1
+      name: Player_RIdol_1
       rect:
         serializedVersion: 2
         x: 0
@@ -83,7 +83,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: Player_Right_2
+      name: Player_RIdol_2
       rect:
         serializedVersion: 2
         x: 0
@@ -96,7 +96,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: Player_Right_3
+      name: Player_RIdol_3
       rect:
         serializedVersion: 2
         x: 0

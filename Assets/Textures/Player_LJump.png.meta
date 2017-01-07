@@ -1,13 +1,13 @@
 fileFormatVersion: 2
-guid: 8b3fdd4515381494b907bed1b5adcd9b
-timeCreated: 1482730593
+guid: b129d06bea754a84c93ed76c566bd2e4
+timeCreated: 1482730570
 licenseType: Free
 TextureImporter:
   fileIDToRecycleName:
-    21300000: Player_Right_0
-    21300002: Player_Right_1
-    21300004: Player_Right_2
-    21300006: Player_Right_3
+    21300000: Player_LJump_0
+    21300002: Player_LJump_1
+    21300004: Player_LJump_2
+    21300006: Player_LJump_3
   serializedVersion: 2
   mipmaps:
     mipMapMode: 0
@@ -57,7 +57,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Player_Right_0
+      name: Player_LJump_0
       rect:
         serializedVersion: 2
         x: 0
@@ -70,7 +70,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: Player_Right_1
+      name: Player_LJump_1
       rect:
         serializedVersion: 2
         x: 0
@@ -83,7 +83,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: Player_Right_2
+      name: Player_LJump_2
       rect:
         serializedVersion: 2
         x: 0
@@ -96,7 +96,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: Player_Right_3
+      name: Player_LJump_3
       rect:
         serializedVersion: 2
         x: 0
