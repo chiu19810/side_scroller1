@@ -3,7 +3,7 @@ using System.Collections;
 
 public class FPSManager : MonoBehaviour
 {
-    static private float fps;
+    private static float fps;
     private float prevTime;
     private int frameCount;
 

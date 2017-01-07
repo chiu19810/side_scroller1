@@ -12,6 +12,7 @@ public class StageManager : MonoBehaviour
     private GameObject PlayerInstance;
     private float playerX;
     private float playerY;
+    private string[,] map;
 
 	void Start ()
     {
@@ -29,7 +30,7 @@ public class StageManager : MonoBehaviour
 
     public void StageInit(string path)
     {
-        string[,] map = OpenMapFile(path);
+        map = OpenMapFile(path);
         float x = 0;
         float y = 0;
 
@@ -40,7 +41,7 @@ public class StageManager : MonoBehaviour
             GameObject.Destroy(n.gameObject);
         }
 
-        for (int i = map.GetLength(0) - 1; i > 0; i--)
+        for (int i = map.GetLength(0) - 1; i >= 0; i--)
         {
             x = 0;
             for (int j = 0; j < map.GetLength(1); j++)
@@ -72,7 +73,7 @@ public class StageManager : MonoBehaviour
 
     private string[,] OpenMapFile(string path)
     {
-        path = "Assets/Map/" + path + ".txt";
+        path = "Assets/Resources/Map/" + path + ".map";
 
         if (!string.IsNullOrEmpty(path))
         {
@@ -127,5 +128,10 @@ public class StageManager : MonoBehaviour
     public GameObject GetPlayer
     {
         get { return PlayerInstance; }
+    }
+
+    public string[,] getMap
+    {
+        get { return map; }
     }
 }

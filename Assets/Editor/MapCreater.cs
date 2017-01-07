@@ -10,35 +10,30 @@ using System.Linq;
 /// </summary>
 public class MapCreater : EditorWindow
 {
-	// 出力先ディレクトリ(nullだとAssets下に出力します)
-	private Object outputDirectory;
-	// マップエディタのマスの数
+    private const float WINDOW_W = 300.0f;
+    private const float WINDOW_H = 700.0f;
+	private float gridSize = 50.0f;
 	private int mapSizeX = 10;
     private int mapSizeY = 10;
-	// グリッドの大きさ、小さいほど細かくなる
-	private float gridSize = 50.0f;
-	// 出力ファイル名
-	private string outputFileName;
-    // 選択した画像パス
     private string selectedLeftImagePath;
     private string selectedRightImagePath;
-    // エリアチェンジ用
     private string areaChangeMapName;
     private string areaChangeMapX;
     private string areaChangeMapY;
-    // ウィンドウのサイズ
-    const float WINDOW_W = 300.0f;
-    const float WINDOW_H = 700.0f;
-	// サブウィンドウ
-	private MapCreaterSubWindow subWindow;
+    private string openFileName;
+    private string chipSearchPath = "Assets/Resources/Prefabs/MapChip/";
+    private string objectSearchPath = "Assets/Resources/Prefabs/MapObject/";
+    private string defaultMapDirectory = "Assets/Resources/Map/";
+    private string defaultBackgroundDirectory = "Assets/Resources/Map/Backgrounds/";
 
     private List<string> mapChipList = new List<string>();
     private List<string> mapObjectList = new List<string>();
     private Vector2 ToolSelectBoxScrollPos = Vector2.zero;
     private Vector2 ChipSelectBoxScrollPos = Vector2.zero;
     private Vector2 ObjectSelectBoxScrollPos = Vector2.zero;
-    private string chipSearchPath = "Assets/Resources/Prefabs/MapChip/";
-    private string objectSearchPath = "Assets/Resources/Prefabs/MapObject/";
+
+	public MapCreaterSubWindow subWindow;
+    public MapCreaterBackGroundWindow bgWindow;
 
     [UnityEditor.MenuItem("Window/MapCreater")]
 	static void ShowTestMainWindow(){
@@ -73,13 +68,17 @@ public class MapCreater : EditorWindow
             }
         }
 
-        outputDirectory = AssetDatabase.LoadMainAssetAtPath("Assets/Map");
+        openFileName = "";
         areaChangeMapName = "";
+        areaChangeMapX = "-1";
+        areaChangeMapY = "-1";
+        selectedRightImagePath = "Assets/Editor/MapCreater/eraser.png";
     }
 
     void OnGUI()
     {
         // GUI
+        EditorGUILayout.Space();
         EditorGUILayout.BeginHorizontal();
         GUILayout.Label("map size X : ", GUILayout.Width(110));
         mapSizeX = EditorGUILayout.IntField(mapSizeX);
@@ -98,17 +97,8 @@ public class MapCreater : EditorWindow
         EditorGUILayout.EndHorizontal();
 		EditorGUILayout.Space();
 
-        EditorGUILayout.BeginHorizontal();
-		GUILayout.Label("Save Directory : ", GUILayout.Width(110));
-		outputDirectory = EditorGUILayout.ObjectField(outputDirectory, typeof(UnityEngine.Object), true);
-        EditorGUILayout.EndHorizontal();
-		EditorGUILayout.Space();
-
-        EditorGUILayout.BeginHorizontal();
-		GUILayout.Label("Save filename : ", GUILayout.Width(110));
-		outputFileName = (string)EditorGUILayout.TextField(outputFileName);
-        EditorGUILayout.EndHorizontal();
-		EditorGUILayout.Space();
+        GUILayout.Label(openFileName);
+        EditorGUILayout.Space();
 
         DrawMapWindowButton();
         SelectChipBox();
@@ -300,16 +290,22 @@ public class MapCreater : EditorWindow
 			GUILayout.Box(tex);
             if (selectedImagePath.IndexOf("areachange") > -1)
             {
+                if (areaChangeMapX == "")
+                    areaChangeMapX = "-1";
+
+                if  (areaChangeMapY == "")
+                    areaChangeMapY = "-1";
+
                 EditorGUILayout.BeginVertical();
                 GUILayout.Label("エリア移動先（マップ名） : ", GUILayout.Width(150));
                 areaChangeMapName = (string)EditorGUILayout.TextField(areaChangeMapName);
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.Label("X（マス） : ", GUILayout.Width(150));
-                areaChangeMapX = (string)EditorGUILayout.TextField(areaChangeMapX);
+                areaChangeMapX = EditorGUILayout.IntField(int.Parse(areaChangeMapX)).ToString();
                 EditorGUILayout.EndHorizontal();
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.Label("Y （マス）: ", GUILayout.Width(150));
-                areaChangeMapY = (string)EditorGUILayout.TextField(areaChangeMapY);
+                areaChangeMapY = EditorGUILayout.IntField(int.Parse(areaChangeMapY)).ToString();
                 EditorGUILayout.EndHorizontal();
                 EditorGUILayout.EndVertical();
             }
@@ -326,7 +322,7 @@ public class MapCreater : EditorWindow
 	// マップウィンドウを開くボタンを生成
 	private void DrawMapWindowButton()
     {
-        if (GUILayout.Button("Open Map Editor", GUILayout.Height(50)))
+        if (GUILayout.Button("Open Map Editor", GUILayout.Height(20)))
         {
             if (subWindow != null)
             {
@@ -341,7 +337,25 @@ public class MapCreater : EditorWindow
 
 			subWindow = MapCreaterSubWindow.WillAppear(this);
 			subWindow.Focus();
+            openFileName = "新規マップ.map";
 		}
+
+        if (GUILayout.Button("Open BackGround Editor", GUILayout.Height(20)))
+        {
+            /*            if (subWindow != null)
+                        {
+                            if (subWindow.MapSaveFlag)
+                            {
+                                if (!EditorUtility.DisplayDialog("MapCreater 警告", "変更が保存されていませんが、新しくマップウィンドウを開きますか？", " はい ", " いいえ "))
+                                {
+                                    return;
+                                }
+                            }
+                        }*/
+
+            bgWindow = MapCreaterBackGroundWindow.WillAppear(this);
+            bgWindow.Focus();
+        }
     }
 
     private void ZoomIn()
@@ -424,23 +438,25 @@ public class MapCreater : EditorWindow
         get { return areaChangeMapY; }
     }
 
-    public string OutputFileName
+    public string OpenFileName
     {
-        get { return outputFileName; }
+        get { return openFileName; }
     }
 
-    // 出力先パスを生成
-    public string OutputFilePath()
+    public void SetFileName(string name)
     {
-		string resultPath = "";
+        openFileName = name;
+    }
 
-		if(outputDirectory != null)
-			resultPath = AssetDatabase.GetAssetPath(outputDirectory);
-		else
-			resultPath = Application.dataPath;
+    public string DefaultMapDirectory
+    {
+        get { return defaultMapDirectory; }
+    }
 
-		return resultPath + "/" + outputFileName + ".txt"; 
-	}
+    public string DefaultBackgroundDirectory
+    {
+        get { return defaultBackgroundDirectory; }
+    }
 }
 
 /// <summary>
@@ -448,34 +464,25 @@ public class MapCreater : EditorWindow
 /// </summary>
 public class MapCreaterSubWindow : EditorWindow
 {
-    // マップウィンドウのサイズ
-    const float WINDOW_W = 150.0f;
-    const float WINDOW_H = 150.0f;
-    // マップのグリッド数
+    private const float WINDOW_W = 150.0f;
+    private const float WINDOW_H = 150.0f;
     private int mapSizeX = 0;
     private int mapSizeY = 0;
-    // グリッドサイズ。親から値をもらう
     private float gridSize = 0.0f;
-    // マップデータ
     private string[,] map;
-    // グリッドの四角
-    private Rect[,] gridRect;
-    // 親ウィンドウの参照を持つ
-    private MapCreater parent;
-
-    private bool mapSaveFlag;
-    private List<bool> mapPrevSaveFlagList = new List<bool>();
-    private List<bool> mapNextSaveFlagList = new List<bool>();
-
     private string[,] mapSave;
-
-    private List<string[,]> mapPrevList = new List<string[,]>();
-    private List<string[,]> mapNextList = new List<string[,]>();
-
     private string[,] oldMap = null;
+    private bool mapSaveFlag;
     private bool prevFlag;
     private bool nextFlag;
-
+    private bool playButtonFlag;
+    private bool ctrlFlag;
+    private Rect[,] gridRect;
+    private MapCreater parent;
+    private List<bool> mapPrevSaveFlagList = new List<bool>();
+    private List<bool> mapNextSaveFlagList = new List<bool>();
+    private List<string[,]> mapPrevList = new List<string[,]>();
+    private List<string[,]> mapNextList = new List<string[,]>();
     private Vector2 ScrollPos = Vector2.zero;
 
     // サブウィンドウを開く
@@ -517,6 +524,8 @@ public class MapCreaterSubWindow : EditorWindow
         mapSaveFlag = false;
         prevFlag = false;
         nextFlag = false;
+        playButtonFlag = false;
+        ctrlFlag = false;
         mapPrevList.Clear();
         mapNextList.Clear();
         mapPrevSaveFlagList.Clear();
@@ -532,6 +541,25 @@ public class MapCreaterSubWindow : EditorWindow
 
     void OnGUI()
     {
+        PlaymodeStateObserver.OnPressedPlayButton += () =>
+        {
+            if (!playButtonFlag && mapSaveFlag)
+            {
+                mapSaveFlag = false;
+                if (!EditorUtility.DisplayDialog("MapCreater 警告", "再生すると変更が破棄されます。\n保存しますか？（保存しなかった場合変更は破棄されます。）", " はい ", " いいえ "))
+                {
+                    playButtonFlag = true;
+                    return;
+                }
+                else
+                {
+                    playButtonFlag = true;
+                    OutputFile();
+                    return;
+                }
+            }
+        };
+
         EditorGUILayout.BeginVertical(GUI.skin.box);
         Rect workArea = GUILayoutUtility.GetRect(10, 10000, 10, 520);
         ScrollPos = GUI.BeginScrollView(workArea, ScrollPos, new Rect(0, 0, mapSizeX * gridSize, mapSizeY * gridSize), false, false);
@@ -544,7 +572,12 @@ public class MapCreaterSubWindow : EditorWindow
 
         if (gridRect == null)
         {
-            EditorUtility.DisplayDialog("MapCreater エラー", "MapCreaterが正常に終了されなかった為、\n編集中のマップデータが初期化されました。", "OK");
+/*            if (!playButtonFlag)
+                EditorUtility.DisplayDialog("MapCreater エラー", "MapCreaterが正常に終了されなかった為、\n編集中のマップデータが初期化されました。", "OK");*/
+
+            playButtonFlag = false;
+            parent.SetFileName("新規マップ.map");
+            parent.Repaint();
 
             // マップデータを初期化
             map = new string[mapSizeY, mapSizeX];
@@ -617,27 +650,38 @@ public class MapCreaterSubWindow : EditorWindow
             oldMap = null;
         }
 
+        if (e.type == EventType.KeyDown && (e.keyCode == KeyCode.LeftControl || e.keyCode == KeyCode.RightControl))
+        {
+            ctrlFlag = true;
+        }
+        else if (e.type == EventType.KeyUp)
+        {
+            ctrlFlag = false;
+        }
+
         if (e.type == EventType.ScrollWheel)
         {
             // ホイールで拡大/縮小
-
-            if (e.delta[1] == 3)
+            if (pos.x > 0 && pos.x < Screen.width && pos.y > 0 && pos.y < 520 && ctrlFlag)
             {
-                parent.SetGridSize(parent.GridSize + 5);
-            }
-            else if (e.delta[1] == -3)
-            {
-                parent.SetGridSize(parent.GridSize - 5);
-            }
+                if (e.delta[1] == 3)
+                {
+                    parent.SetGridSize(parent.GridSize + 5);
+                }
+                else if (e.delta[1] == -3)
+                {
+                    parent.SetGridSize(parent.GridSize - 5);
+                }
 
-            if (parent.GridSize > 100)
-                parent.SetGridSize(100);
-            else if (parent.GridSize < 5)
-                parent.SetGridSize(5);
+                if (parent.GridSize > 100)
+                    parent.SetGridSize(100);
+                else if (parent.GridSize < 5)
+                    parent.SetGridSize(5);
 
-            GridSizeUpdate();
-            Repaint();
-            parent.Repaint();
+                GridSizeUpdate();
+                Repaint();
+                parent.Repaint();
+            }
         }
         else if (e.type == EventType.MouseDrag || e.type == EventType.MouseDown)
         {
@@ -772,11 +816,14 @@ public class MapCreaterSubWindow : EditorWindow
             }
             else if (!(stas[0].IndexOf("start") > -1))
             {
-                if (stas.Length > 0)
+                if (stas.Length > 1)
                 {
-
+                    status = stas[1];
                 }
-//                    status = stas[1];
+            }
+            else
+            {
+                status = "プレイヤーのスタート地点";
             }
         }
         else
@@ -859,13 +906,11 @@ public class MapCreaterSubWindow : EditorWindow
         EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.BeginHorizontal();
-        // 出力ボタン
         if (GUILayout.Button("保存", GUILayout.MinHeight(50)))
         {
             OutputFile();
         }
 
-        // 開くボタン
         if (GUILayout.Button("開く", GUILayout.MinHeight(50)))
         {
             OpenFile();
@@ -932,15 +977,26 @@ public class MapCreaterSubWindow : EditorWindow
     // ファイルで出力
     private void OutputFile()
     {
-        string path = parent.OutputFilePath();
+        string path = EditorUtility.SaveFilePanel("select file", parent.DefaultMapDirectory, parent.OpenFileName, "map");
 
-        if (parent.OutputFileName == "")
-        {
-            EditorUtility.DisplayDialog("MapCreater エラー", "ファイル名が設定されていません！", "OK");
-            return;
-        }
+        /*        if (path == "" || path == null)
+                {
+                    if (EditorUtility.DisplayDialog("MapCreater エラー", "ファイルが選択されていません！\n保存をキャンセルしますか？", " はい ", " いいえ "))
+                        return;
+                    else
+                    {
+                        OutputFile();
+                        return;
+                    }
+                }
 
-        if (!EditorUtility.DisplayDialog("MapCreater", path + " に保存します。\nよろしいですか？", " はい ", " いいえ "))
+                if (!EditorUtility.DisplayDialog("MapCreater", path + " に保存します。\nよろしいですか？", " はい ", " いいえ "))
+                {
+                    OutputFile();
+                    return;
+                }*/
+
+        if (path == "" || path == null)
             return;
 
         if (System.IO.File.Exists(path))
@@ -966,13 +1022,18 @@ public class MapCreaterSubWindow : EditorWindow
     // ファイルを開く
     private void OpenFile()
     {
-        string path = EditorUtility.OpenFilePanel("select file", "Assets/Map/", "txt");
+        string path = EditorUtility.OpenFilePanel("select file", parent.DefaultMapDirectory, "map");
 
         if (!string.IsNullOrEmpty(path))
         {
             string text = "";
             int sizeX = 0;
             int sizeY = 0;
+
+            string[] pathdir = path.Split('/');
+            string filename = pathdir[pathdir.Length - 1];
+
+            parent.SetFileName(filename);
 
             StreamReader sr = new StreamReader(path, System.Text.Encoding.Default);
 
@@ -1002,7 +1063,7 @@ public class MapCreaterSubWindow : EditorWindow
                     else if (text.Split('!')[i].Split(',')[j].IndexOf("areachange") > -1)
                         map[i, j] = "Assets/Editor/MapCreater/" + text.Split('!')[i].Split(',')[j].Split('|')[0] + ".png|" + text.Split('!')[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text.Split('!')[i].Split(',')[j].Split('|')[1].Split(':')[1] + ":" + text.Split('!')[i].Split(',')[j].Split('|')[1].Split(':')[2];
                     else if (text.Split('!')[i].Split(',')[j] != "")
-                        map[i, j] = "Assets/Textures/" + text.Split('!')[i].Split(',')[j].Split('|')[0] + ".png|" + text.Split('!')[i].Split(',')[j].Split('|')[1];
+                        map[i, j] = "Assets/Resources/Textures/" + text.Split('!')[i].Split(',')[j].Split('|')[0] + ".png|" + text.Split('!')[i].Split(',')[j].Split('|')[1];
                     else
                         map[i, j] = "";
                 }
@@ -1047,5 +1108,456 @@ public class MapCreaterSubWindow : EditorWindow
     public bool MapSaveFlag
     {
         get { return mapSaveFlag; }
+    }
+}
+
+public class MapCreaterBackGroundWindow: EditorWindow
+{
+    private const float WINDOW_W = 150.0f;
+    private const float WINDOW_H = 150.0f;
+    private float gridSize = 0.0f;
+    private int mapSizeX = 0;
+    private int mapSizeY = 0;
+    private int objectSize;
+    private int mode;
+    private bool ctrlFlag;
+    private bool saveFlag;
+    private bool loopModeX;
+    private bool loopModeY;
+    private Rect[,] gridRect;
+    private MapCreater parent;
+    private Vector2 ScrollPos = Vector2.zero;
+    private Vector2 ScrollPos2 = Vector2.zero;
+    private FoldOut[] foldout;
+    private Object background;
+    private Color backcolor;
+
+    public static MapCreaterBackGroundWindow WillAppear(MapCreater _parent)
+    {
+        MapCreaterBackGroundWindow window = (MapCreaterBackGroundWindow)EditorWindow.GetWindow(typeof(MapCreaterBackGroundWindow), false);
+        window.Show();
+        window.minSize = new Vector2(WINDOW_W, WINDOW_H);
+        window.SetParent(_parent);
+        window.init();
+        return window;
+    }
+
+    public void init()
+    {
+        mapSizeX = parent.MapSizeX;
+        mapSizeY = parent.MapSizeY;
+        gridSize = parent.GridSize;
+        gridRect = CreateGrid(mapSizeY, mapSizeX);
+        objectSize = 1;
+        mode = 0;
+        loopModeX = false;
+        loopModeY = false;
+        background = null;
+        backcolor = new Color(119f / 255f, 211f / 255f, 255f / 255f);
+        foldout = new FoldOut[objectSize];
+        foldout[0] = new FoldOut();
+        foldout[0].foldout = true;
+    }
+
+    public void GridSizeUpdate()
+    {
+        gridSize = parent.GridSize;
+        gridRect = CreateGrid(mapSizeY, mapSizeX);
+    }
+
+    private class FoldOut
+    {
+        public bool foldout = false;
+        public bool objectIsX = false;
+        public bool objectIsY = false;
+        public float objectX = 0;
+        public float objectY = 0;
+        public float objectLoopX = 0;
+        public float objectLoopY = 0;
+        public Object obj = null;
+    }
+
+    void OnGUI()
+    {
+        int oldObjectSize = objectSize;
+
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.BeginVertical(GUI.skin.box);
+        Rect workArea = GUILayoutUtility.GetRect(10, 10000, 10, 525);
+        ScrollPos = GUI.BeginScrollView(workArea, ScrollPos, new Rect(0, 0, mapSizeX * gridSize, mapSizeY * gridSize), false, false);
+        Vector2 pos = Event.current.mousePosition;
+
+        if (gridRect == null)
+        {
+//            EditorUtility.DisplayDialog("MapCreater エラー", "MapCreaterが正常に終了されなかった為、\n編集中のマップデータが初期化されました。", "OK");
+            GridSizeUpdate();
+        }
+
+        float backSizeX = Screen.width - 300;
+        float backSizeY = 525;
+
+        if (800 < gridSize * mapSizeX)
+        {
+            backSizeX = gridSize * mapSizeX;
+        }
+
+        if (525 < gridSize * mapSizeY)
+        {
+            backSizeY = gridSize * mapSizeY;
+        }
+
+        EditorGUI.DrawRect(new Rect(0, 0, backSizeX, backSizeY), backcolor);
+
+        if (background != null)
+        {
+            float stageW = gridSize * mapSizeX;
+            float stageH = gridSize * mapSizeY;
+            float w = ((Texture2D)background).width;
+            float h = ((Texture2D)background).height;
+            float x = 0;
+            float y = stageH - h * (gridSize / 64);
+            int numX = 1;
+            int numY = 1;
+
+            if (loopModeX && loopModeY)
+            {
+                numX = (int)(stageW / (w * (gridSize / 64))) + 1;
+                numY = (int)(stageH / (h * (gridSize / 64))) + 1;
+            }
+            else if (loopModeX)
+            {
+                numX = (int)(stageW / (w * (gridSize / 64))) + 1;
+            }
+            else if (loopModeY)
+            {
+                numY = (int)(stageH / (h * (gridSize / 64))) + 1;
+            }
+
+            for (int yy = 0; yy < numY; yy++)
+            {
+                x = 0;
+                for (int xx = 0; xx < numX; xx++)
+                {
+                    Texture2D tex = (Texture2D)AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(background), typeof(Texture2D));
+                    GUI.DrawTexture(new Rect(x, y, w * (gridSize / 64), h * (gridSize / 64)), tex);
+
+                    x += w * (gridSize / 64);
+                }
+                y -= h * (gridSize / 64);
+            }
+        }
+
+        for (int yy = 0; yy < mapSizeY; yy++)
+        {
+            for (int xx = 0; xx < mapSizeX; xx++)
+            {
+                DrawGridLine(gridRect[yy, xx]);
+            }
+        }
+
+        Event e = Event.current;
+        if (e.type == EventType.KeyDown && (e.keyCode == KeyCode.LeftControl || e.keyCode == KeyCode.RightControl))
+        {
+            ctrlFlag = true;
+        }
+        else if (e.type == EventType.KeyUp)
+        {
+            ctrlFlag = false;
+        }
+
+        if (e.type == EventType.ScrollWheel)
+        {
+            // ホイールで拡大/縮小
+            if (pos.x > 0 && pos.x < 800 && pos.y > 0 && pos.y < 525 && ctrlFlag)
+            {
+                if (e.delta[1] == 3)
+                {
+                    parent.SetGridSize(parent.GridSize + 5);
+                }
+                else if (e.delta[1] == -3)
+                {
+                    parent.SetGridSize(parent.GridSize - 5);
+                }
+
+                if (parent.GridSize > 100)
+                    parent.SetGridSize(100);
+                else if (parent.GridSize < 5)
+                    parent.SetGridSize(5);
+
+                GridSizeUpdate();
+                Repaint();
+                parent.Repaint();
+            }
+        }
+
+        if (foldout != null)
+        {
+            for (int i = 0; i < objectSize; i++)
+            {
+                if (foldout[i] != null)
+                {
+                    if (foldout[i].obj != null)
+                    {
+                        float stageW = gridSize * mapSizeX;
+                        float stageH = gridSize * mapSizeY;
+                        float w = ((Texture2D)foldout[i].obj).width;
+                        float h = ((Texture2D)foldout[i].obj).height;
+                        float x = foldout[i].objectX * (gridSize / 64);
+                        float y = stageH - h * (gridSize / 64) - foldout[i].objectY * (gridSize / 64);
+                        int numX = 1;
+                        int numY = 1;
+
+                        if (foldout[i].objectIsX && foldout[i].objectIsY)
+                        {
+                            numX = (int)(stageW / (w * (gridSize / 64) + foldout[i].objectLoopX * (gridSize / 64))) + 1;
+                            numY = (int)(stageH / (h * (gridSize / 64) + foldout[i].objectLoopY * (gridSize / 64))) + 1;
+                        }
+                        else if (foldout[i].objectIsX)
+                        {
+                            numX = (int)(stageW / (w * (gridSize / 64) + foldout[i].objectLoopX * (gridSize / 64))) + 1;
+                        }
+                        else if (foldout[i].objectIsY)
+                        {
+                            numY = (int)(stageH / (h * (gridSize / 64) + foldout[i].objectLoopY * (gridSize / 64))) + 1;
+                        }
+
+                        for (int yy = 0; yy < numY; yy++)
+                        {
+                            x = foldout[i].objectX * (gridSize / 64);
+                            for (int xx = 0; xx < numX; xx++)
+                            {
+                                Texture2D tex = (Texture2D)AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(foldout[i].obj), typeof(Texture2D));
+                                GUI.DrawTexture(new Rect(x, y, w * (gridSize / 64), h * (gridSize / 64)), tex);
+
+                                x += w * (gridSize / 64) + foldout[i].objectLoopX * (gridSize / 64);
+                            }
+                            y -= h * (gridSize / 64) + foldout[i].objectLoopY * (gridSize / 64);
+                        }
+                    }
+                }
+            }
+        }
+
+        GUI.EndScrollView();
+        EditorGUILayout.EndVertical();
+
+        EditorGUILayout.BeginVertical(GUILayout.Width(300));
+        ScrollPos2 = EditorGUILayout.BeginScrollView(ScrollPos2);
+        EditorGUILayout.Space();
+
+        EditorGUILayout.BeginHorizontal();
+        mode = EditorGUILayout.Popup("モード : ", mode, new string[] { "背景ループ", "オブジェクト別ループ" });
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.Space();
+
+        EditorGUILayout.BeginHorizontal();
+        background = EditorGUILayout.ObjectField("背景 : ", background, typeof(Texture2D), false);
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.Space();
+
+        EditorGUILayout.BeginHorizontal();
+        backcolor = EditorGUILayout.ColorField("背景色 : ", backcolor);
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.Space();
+
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.Label("ループモード : ", GUILayout.Width(100));
+        GUILayout.Label("X座標");
+        loopModeX = EditorGUILayout.Toggle(loopModeX);
+        GUILayout.Label("Y座標");
+        loopModeY = EditorGUILayout.Toggle(loopModeY);
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.Space();
+
+        if (mode == 1)
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("オブジェクト数 : ", GUILayout.Width(100));
+            objectSize = EditorGUILayout.IntField(objectSize);
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space();
+
+            if (objectSize != oldObjectSize)
+            {
+                if (objectSize >= 10)
+                    objectSize = 10;
+
+                FoldOut[] oldFold = foldout;
+                foldout = new FoldOut[objectSize];
+
+                for (int i = 0; i < objectSize; i++)
+                {
+                    if (oldFold != null)
+                    {
+                        if (i < oldFold.Length)
+                        {
+                            if (oldFold[i] != null)
+                            {
+                                foldout[i] = oldFold[i];
+                                continue;
+                            }
+                        }
+                    }
+
+                    foldout[i] = new FoldOut();
+                }
+            }
+
+            if (foldout != null)
+            {
+                for (int i = 0; i < objectSize; i++)
+                {
+                    if (foldout[i] != null)
+                    {
+                        if (foldout[i].foldout = EditorGUILayout.Foldout(foldout[i].foldout, "Object [" + i + "]"))
+                        {
+                            EditorGUILayout.BeginHorizontal();
+                            foldout[i].obj = EditorGUILayout.ObjectField("オブジェクト : ", foldout[i].obj, typeof(Texture2D), false);
+                            EditorGUILayout.EndHorizontal();
+                            EditorGUILayout.Space();
+
+                            EditorGUILayout.BeginHorizontal();
+                            GUILayout.Label("ループモード : ", GUILayout.Width(100));
+                            GUILayout.Label("X座標");
+                            foldout[i].objectIsX = EditorGUILayout.Toggle(foldout[i].objectIsX);
+                            GUILayout.Label("Y座標");
+                            foldout[i].objectIsY = EditorGUILayout.Toggle(foldout[i].objectIsY);
+                            EditorGUILayout.EndHorizontal();
+                            EditorGUILayout.Space();
+
+                            EditorGUILayout.BeginHorizontal();
+                            GUILayout.Label("X座標 : ", GUILayout.Width(100));
+                            foldout[i].objectX = EditorGUILayout.FloatField(foldout[i].objectX);
+                            EditorGUILayout.EndHorizontal();
+                            EditorGUILayout.Space();
+
+                            EditorGUILayout.BeginHorizontal();
+                            GUILayout.Label("Y座標 : ", GUILayout.Width(100));
+                            foldout[i].objectY = EditorGUILayout.FloatField(foldout[i].objectY);
+                            EditorGUILayout.EndHorizontal();
+                            EditorGUILayout.Space();
+
+                            EditorGUILayout.BeginHorizontal();
+                            GUILayout.Label("ループの間隔 : ", GUILayout.Width(100));
+                            GUILayout.Label("X座標");
+                            foldout[i].objectLoopX = EditorGUILayout.FloatField(foldout[i].objectLoopX);
+                            GUILayout.Label("Y座標");
+                            foldout[i].objectLoopY = EditorGUILayout.FloatField(foldout[i].objectLoopY);
+                            EditorGUILayout.EndHorizontal();
+                            EditorGUILayout.Space();
+                        }
+                    }
+                }
+            }
+        }
+
+        EditorGUILayout.EndScrollView();
+        EditorGUILayout.EndVertical();
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.BeginHorizontal();
+
+        if (GUILayout.Button("保存", GUILayout.MinHeight(50)))
+        {
+            OutputFile();
+        }
+
+        if (GUILayout.Button("開く", GUILayout.MinHeight(50)))
+        {
+            OpenFile();
+        }
+
+        EditorGUILayout.EndHorizontal();
+        Repaint();
+    }
+
+    // ファイルで出力
+    private void OutputFile()
+    {
+        string path = EditorUtility.SaveFilePanel("select file", parent.DefaultBackgroundDirectory, parent.OpenFileName.Split('.')[0], "mbg");
+
+        if (path == "" || path == null)
+            return;
+
+        if (System.IO.File.Exists(path))
+        {
+            System.IO.FileStream st = new System.IO.FileStream(path, FileMode.Open);
+            st.SetLength(0);
+            st.Close();
+        }
+
+        FileInfo fileInfo = new FileInfo(path);
+        StreamWriter sw = fileInfo.AppendText();
+        sw.WriteLine("");
+        sw.Flush();
+        sw.Close();
+
+        saveFlag = false;
+
+        // 完了ポップアップ
+        EditorUtility.DisplayDialog("MapCreater", "保存が完了しました。\n" + path, "OK");
+    }
+
+    // ファイルを開く
+    private void OpenFile()
+    {
+        string path = EditorUtility.OpenFilePanel("select file", parent.DefaultBackgroundDirectory, "mbg");
+
+        if (!string.IsNullOrEmpty(path))
+        {
+            Repaint();
+        }
+    }
+
+    private void SetParent(MapCreater _parent)
+    {
+        parent = _parent;
+    }
+
+    private Rect[,] CreateGrid(int divY, int divX)
+    {
+        int sizeW = divX;
+        int sizeH = divY;
+
+        float x = 0.0f;
+        float y = 0.0f;
+        float w = gridSize;
+        float h = gridSize;
+
+        Rect[,] resultRects = new Rect[sizeH, sizeW];
+
+        for (int yy = 0; yy < sizeH; yy++)
+        {
+            x = 0.0f;
+            for (int xx = 0; xx < sizeW; xx++)
+            {
+                Rect r = new Rect(new Vector2(x, y), new Vector2(w, h));
+                resultRects[yy, xx] = r;
+                x += w;
+            }
+            y += h;
+        }
+
+        return resultRects;
+    }
+
+    private void DrawGridLine(Rect r)
+    {
+        Handles.color = new Color(1f, 1f, 1f, 0.5f);
+
+        Handles.DrawLine(
+            new Vector2(r.position.x, r.position.y),
+            new Vector2(r.position.x + r.size.x, r.position.y));
+
+        Handles.DrawLine(
+            new Vector2(r.position.x, r.position.y + r.size.y),
+            new Vector2(r.position.x + r.size.x, r.position.y + r.size.y));
+
+        Handles.DrawLine(
+            new Vector2(r.position.x, r.position.y),
+            new Vector2(r.position.x, r.position.y + r.size.y));
+
+        Handles.DrawLine(
+            new Vector2(r.position.x + r.size.x, r.position.y),
+            new Vector2(r.position.x + r.size.x, r.position.y + r.size.y));
     }
 }

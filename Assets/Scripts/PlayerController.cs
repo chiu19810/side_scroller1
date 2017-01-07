@@ -6,6 +6,7 @@ public class PlayerController : MonoBehaviour
     private Animator acon;
     private Rigidbody2D rb;
     private BoxCollider2D boxCollider2D;
+    private StageManager stage;
     private bool isGround;
     private bool horiJumpFlag;
     private bool jumpMoveFlag;
@@ -16,7 +17,7 @@ public class PlayerController : MonoBehaviour
     private float moveSpeedChange;
     private const float m_centerY = 0.32f;
 
-    public LayerMask groundLayer;
+    public LayerMask groundLayer = -1;
     public float speed = -1;
     public float Sjump = -1;
     public float Bjump = -1;
@@ -29,10 +30,13 @@ public class PlayerController : MonoBehaviour
             Debug.Log("Sjumpが設定されていません！");
         if (Bjump == -1)
             Debug.Log("Bjumpが設定されていません！");
+        if (groundLayer == -1)
+            Debug.Log("groundLayerが設定されていません！");
 
         acon = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
         boxCollider2D = GetComponent<BoxCollider2D>();
+        stage = GameObject.Find("StageManager").GetComponent<StageManager>();
 
         isGround = false;
         horiJumpFlag = false;
@@ -54,7 +58,7 @@ public class PlayerController : MonoBehaviour
     {
         Vector2 pos = transform.position;
         Vector2 groundCheck = new Vector2(pos.x, pos.y - (m_centerY * transform.localScale.y));
-        Vector2 groundArea = new Vector2(boxCollider2D.size.x * 0.2f, 0.08f);
+        Vector2 groundArea = new Vector2(boxCollider2D.size.x * 0.48f, 0.08f);
 
         isGround = Physics2D.OverlapArea(groundCheck + groundArea, groundCheck - groundArea, groundLayer);
     }
@@ -195,8 +199,6 @@ public class PlayerController : MonoBehaviour
     {
         if (collider.gameObject.tag == "AreaChange")
         {
-            StageManager stage = GameObject.Find("StageManager").GetComponent<StageManager>();
-
             string[] stas = collider.gameObject.name.Split(':');
             float chipX = stage.chipSizeX;
             float chipY = stage.chipSizeY;

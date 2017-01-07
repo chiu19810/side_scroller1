@@ -5,11 +5,13 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/UnityChan2D/Demo/Scenes/Start.unity
-  - enabled: 1
+  - enabled: 0
     path: Assets/UnityChan2D/Demo/Scenes/Loading 1-1.unity
-  - enabled: 1
+  - enabled: 0
     path: Assets/UnityChan2D/Demo/Scenes/Intro 1-1.unity
-  - enabled: 1
+  - enabled: 0
     path: Assets/UnityChan2D/Demo/Scenes/World 1-1.unity
+  - enabled: 0
+    path: Assets/Scenes/untida.unity
