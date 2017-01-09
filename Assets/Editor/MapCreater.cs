@@ -20,7 +20,6 @@ public class MapCreater : EditorWindow
     private string areaChangeMapName;
     private string areaChangeMapX;
     private string areaChangeMapY;
-    private string openFileName;
     private string chipSearchPath = "Assets/Resources/Prefabs/MapChip/";
     private string objectSearchPath = "Assets/Resources/Prefabs/MapObject/";
     private string defaultMapDirectory = "Assets/Resources/Map/";
@@ -68,7 +67,6 @@ public class MapCreater : EditorWindow
             }
         }
 
-        openFileName = "";
         areaChangeMapName = "";
         areaChangeMapX = "-1";
         areaChangeMapY = "-1";
@@ -96,9 +94,6 @@ public class MapCreater : EditorWindow
 		gridSize = EditorGUILayout.FloatField(gridSize);
         EditorGUILayout.EndHorizontal();
 		EditorGUILayout.Space();
-
-        GUILayout.Label(openFileName);
-        EditorGUILayout.Space();
 
         DrawMapWindowButton();
         SelectChipBox();
@@ -337,7 +332,6 @@ public class MapCreater : EditorWindow
 
 			subWindow = MapCreaterSubWindow.WillAppear(this);
 			subWindow.Focus();
-            openFileName = "新規マップ.map";
 		}
 
         if (GUILayout.Button("Open BackGround Editor", GUILayout.Height(20)))
@@ -438,16 +432,6 @@ public class MapCreater : EditorWindow
         get { return areaChangeMapY; }
     }
 
-    public string OpenFileName
-    {
-        get { return openFileName; }
-    }
-
-    public void SetFileName(string name)
-    {
-        openFileName = name;
-    }
-
     public string DefaultMapDirectory
     {
         get { return defaultMapDirectory; }
@@ -469,6 +453,7 @@ public class MapCreaterSubWindow : EditorWindow
     private int mapSizeX = 0;
     private int mapSizeY = 0;
     private float gridSize = 0.0f;
+    private string filename;
     private string[,] map;
     private string[,] mapSave;
     private string[,] oldMap = null;
@@ -531,6 +516,7 @@ public class MapCreaterSubWindow : EditorWindow
         mapPrevSaveFlagList.Clear();
         mapNextSaveFlagList.Clear();
         mapSave = (string[,]) map.Clone();
+        filename = "新規マップ.map";
     }
 
     public void GridSizeUpdate()
@@ -541,24 +527,31 @@ public class MapCreaterSubWindow : EditorWindow
 
     void OnGUI()
     {
-        PlaymodeStateObserver.OnPressedPlayButton += () =>
+        try
         {
-            if (!playButtonFlag && mapSaveFlag)
+            PlaymodeStateObserver.OnPressedPlayButton += () =>
             {
-                mapSaveFlag = false;
-                if (!EditorUtility.DisplayDialog("MapCreater 警告", "再生すると変更が破棄されます。\n保存しますか？（保存しなかった場合変更は破棄されます。）", " はい ", " いいえ "))
+                if (!playButtonFlag && mapSaveFlag)
                 {
-                    playButtonFlag = true;
-                    return;
+                    mapSaveFlag = false;
+                    if (!EditorUtility.DisplayDialog("MapCreater 警告", "再生すると変更が破棄されます。\n保存しますか？（保存しなかった場合変更は破棄されます。）", " はい ", " いいえ "))
+                    {
+                        playButtonFlag = true;
+                        return;
+                    }
+                    else
+                    {
+                        playButtonFlag = true;
+                        OutputFile();
+                        return;
+                    }
                 }
-                else
-                {
-                    playButtonFlag = true;
-                    OutputFile();
-                    return;
-                }
-            }
-        };
+            };
+        }
+        catch (System.Exception exception)
+        {
+            Debug.Log(exception.Message);
+        }
 
         EditorGUILayout.BeginVertical(GUI.skin.box);
         Rect workArea = GUILayoutUtility.GetRect(10, 10000, 10, 520);
@@ -576,7 +569,7 @@ public class MapCreaterSubWindow : EditorWindow
                 EditorUtility.DisplayDialog("MapCreater エラー", "MapCreaterが正常に終了されなかった為、\n編集中のマップデータが初期化されました。", "OK");*/
 
             playButtonFlag = false;
-            parent.SetFileName("新規マップ.map");
+            filename = "新規マップ.map";
             parent.Repaint();
 
             // マップデータを初期化
@@ -905,6 +898,8 @@ public class MapCreaterSubWindow : EditorWindow
 
         EditorGUILayout.EndHorizontal();
 
+        GUILayout.Label("ファイル名 : " + filename);
+
         EditorGUILayout.BeginHorizontal();
         if (GUILayout.Button("保存", GUILayout.MinHeight(50)))
         {
@@ -977,7 +972,7 @@ public class MapCreaterSubWindow : EditorWindow
     // ファイルで出力
     private void OutputFile()
     {
-        string path = EditorUtility.SaveFilePanel("select file", parent.DefaultMapDirectory, parent.OpenFileName, "map");
+        string path = EditorUtility.SaveFilePanel("select file", parent.DefaultMapDirectory, filename, "map");
 
         /*        if (path == "" || path == null)
                 {
@@ -1031,9 +1026,9 @@ public class MapCreaterSubWindow : EditorWindow
             int sizeY = 0;
 
             string[] pathdir = path.Split('/');
-            string filename = pathdir[pathdir.Length - 1];
+            string name = pathdir[pathdir.Length - 1];
 
-            parent.SetFileName(filename);
+            filename = name;
 
             StreamReader sr = new StreamReader(path, System.Text.Encoding.Default);
 
@@ -1124,12 +1119,13 @@ public class MapCreaterBackGroundWindow: EditorWindow
     private bool saveFlag;
     private bool loopModeX;
     private bool loopModeY;
+    private string fileName;
+    private string background;
     private Rect[,] gridRect;
     private MapCreater parent;
     private Vector2 ScrollPos = Vector2.zero;
     private Vector2 ScrollPos2 = Vector2.zero;
     private FoldOut[] foldout;
-    private Object background;
     private Color backcolor;
 
     public static MapCreaterBackGroundWindow WillAppear(MapCreater _parent)
@@ -1157,24 +1153,13 @@ public class MapCreaterBackGroundWindow: EditorWindow
         foldout = new FoldOut[objectSize];
         foldout[0] = new FoldOut();
         foldout[0].foldout = true;
+        fileName = "新規ファイル.mbg";
     }
 
     public void GridSizeUpdate()
     {
         gridSize = parent.GridSize;
         gridRect = CreateGrid(mapSizeY, mapSizeX);
-    }
-
-    private class FoldOut
-    {
-        public bool foldout = false;
-        public bool objectIsX = false;
-        public bool objectIsY = false;
-        public float objectX = 0;
-        public float objectY = 0;
-        public float objectLoopX = 0;
-        public float objectLoopY = 0;
-        public Object obj = null;
     }
 
     void OnGUI()
@@ -1208,12 +1193,14 @@ public class MapCreaterBackGroundWindow: EditorWindow
 
         EditorGUI.DrawRect(new Rect(0, 0, backSizeX, backSizeY), backcolor);
 
-        if (background != null)
+        if (background != "" && background != null)
         {
+            Texture2D tex = AssetDatabase.LoadAssetAtPath(background, typeof(Texture2D)) as Texture2D;
+
             float stageW = gridSize * mapSizeX;
             float stageH = gridSize * mapSizeY;
-            float w = ((Texture2D)background).width;
-            float h = ((Texture2D)background).height;
+            float w = tex.width;
+            float h = tex.height;
             float x = 0;
             float y = stageH - h * (gridSize / 64);
             int numX = 1;
@@ -1238,8 +1225,8 @@ public class MapCreaterBackGroundWindow: EditorWindow
                 x = 0;
                 for (int xx = 0; xx < numX; xx++)
                 {
-                    Texture2D tex = (Texture2D)AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(background), typeof(Texture2D));
-                    GUI.DrawTexture(new Rect(x, y, w * (gridSize / 64), h * (gridSize / 64)), tex);
+                    Texture2D tex2 = (Texture2D)AssetDatabase.LoadAssetAtPath(background, typeof(Texture2D));
+                    GUI.DrawTexture(new Rect(x, y, w * (gridSize / 64), h * (gridSize / 64)), tex2);
 
                     x += w * (gridSize / 64);
                 }
@@ -1296,12 +1283,14 @@ public class MapCreaterBackGroundWindow: EditorWindow
             {
                 if (foldout[i] != null)
                 {
-                    if (foldout[i].obj != null)
+                    if (foldout[i].obj != "" && foldout[i].obj != null)
                     {
+                        Texture2D tex = AssetDatabase.LoadAssetAtPath(foldout[i].obj, typeof(Texture2D)) as Texture2D;
+
                         float stageW = gridSize * mapSizeX;
                         float stageH = gridSize * mapSizeY;
-                        float w = ((Texture2D)foldout[i].obj).width;
-                        float h = ((Texture2D)foldout[i].obj).height;
+                        float w = tex.width;
+                        float h = tex.height;
                         float x = foldout[i].objectX * (gridSize / 64);
                         float y = stageH - h * (gridSize / 64) - foldout[i].objectY * (gridSize / 64);
                         int numX = 1;
@@ -1326,8 +1315,8 @@ public class MapCreaterBackGroundWindow: EditorWindow
                             x = foldout[i].objectX * (gridSize / 64);
                             for (int xx = 0; xx < numX; xx++)
                             {
-                                Texture2D tex = (Texture2D)AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(foldout[i].obj), typeof(Texture2D));
-                                GUI.DrawTexture(new Rect(x, y, w * (gridSize / 64), h * (gridSize / 64)), tex);
+                                Texture2D tex2 = (Texture2D)AssetDatabase.LoadAssetAtPath(foldout[i].obj, typeof(Texture2D));
+                                GUI.DrawTexture(new Rect(x, y, w * (gridSize / 64), h * (gridSize / 64)), tex2);
 
                                 x += w * (gridSize / 64) + foldout[i].objectLoopX * (gridSize / 64);
                             }
@@ -1351,7 +1340,7 @@ public class MapCreaterBackGroundWindow: EditorWindow
         EditorGUILayout.Space();
 
         EditorGUILayout.BeginHorizontal();
-        background = EditorGUILayout.ObjectField("背景 : ", background, typeof(Texture2D), false);
+        background = AssetDatabase.GetAssetPath(EditorGUILayout.ObjectField("背景 : ", AssetDatabase.LoadAssetAtPath(background, typeof(Texture2D)), typeof(Texture2D), false));
         EditorGUILayout.EndHorizontal();
         EditorGUILayout.Space();
 
@@ -1412,7 +1401,7 @@ public class MapCreaterBackGroundWindow: EditorWindow
                         if (foldout[i].foldout = EditorGUILayout.Foldout(foldout[i].foldout, "Object [" + i + "]"))
                         {
                             EditorGUILayout.BeginHorizontal();
-                            foldout[i].obj = EditorGUILayout.ObjectField("オブジェクト : ", foldout[i].obj, typeof(Texture2D), false);
+                            foldout[i].obj = AssetDatabase.GetAssetPath(EditorGUILayout.ObjectField("オブジェクト : ", AssetDatabase.LoadAssetAtPath(foldout[i].obj, typeof(Texture2D)), typeof(Texture2D), false));
                             EditorGUILayout.EndHorizontal();
                             EditorGUILayout.Space();
 
@@ -1454,7 +1443,9 @@ public class MapCreaterBackGroundWindow: EditorWindow
         EditorGUILayout.EndScrollView();
         EditorGUILayout.EndVertical();
         EditorGUILayout.EndHorizontal();
+        GUILayout.Label("ファイル名 : " + fileName);
         EditorGUILayout.BeginHorizontal();
+
 
         if (GUILayout.Button("保存", GUILayout.MinHeight(50)))
         {
@@ -1473,7 +1464,7 @@ public class MapCreaterBackGroundWindow: EditorWindow
     // ファイルで出力
     private void OutputFile()
     {
-        string path = EditorUtility.SaveFilePanel("select file", parent.DefaultBackgroundDirectory, parent.OpenFileName.Split('.')[0], "mbg");
+        string path = EditorUtility.SaveFilePanel("select file", parent.DefaultBackgroundDirectory, fileName, "mbg");
 
         if (path == "" || path == null)
             return;
@@ -1485,9 +1476,25 @@ public class MapCreaterBackGroundWindow: EditorWindow
             st.Close();
         }
 
+        fileName = path.Split('/')[path.Split('/').Length - 1];
+
+        MapBackgroundData data = new MapBackgroundData();
+        data.mode = mode;
+        data.background = background;
+        data.backcolor = backcolor;
+        data.loopXFlag = loopModeX;
+        data.loopYFlag = loopModeY;
+        data.objectSize = objectSize;
+        data.foldouts = new FoldOut[objectSize];
+
+        for (int i = 0; i < objectSize; i++)
+        {
+            data.foldouts[i] = foldout[i];
+        }
+
         FileInfo fileInfo = new FileInfo(path);
         StreamWriter sw = fileInfo.AppendText();
-        sw.WriteLine("");
+        sw.WriteLine(JsonUtility.ToJson(data));
         sw.Flush();
         sw.Close();
 
@@ -1504,6 +1511,24 @@ public class MapCreaterBackGroundWindow: EditorWindow
 
         if (!string.IsNullOrEmpty(path))
         {
+            fileName = path.Split('/')[path.Split('/').Length - 1];
+
+            StreamReader sr = new StreamReader(path, System.Text.Encoding.Default);
+            MapBackgroundData data = JsonUtility.FromJson<MapBackgroundData>(sr.ReadToEnd());
+
+            mode = data.mode;
+            background = data.background;
+            backcolor = data.backcolor;
+            loopModeX = data.loopXFlag;
+            loopModeY = data.loopYFlag;
+            objectSize = data.objectSize;
+            foldout = new FoldOut[objectSize];
+
+            for (int i = 0; i < objectSize; i++)
+            {
+                foldout[i] = data.foldouts[i];
+            }
+
             Repaint();
         }
     }

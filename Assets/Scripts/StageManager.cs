@@ -4,6 +4,7 @@ using System.IO;
 
 public class StageManager : MonoBehaviour
 {
+    public Camera cameraObject;
     public string startMap = "";
 
     public float chipSizeX = -1;
@@ -30,16 +31,61 @@ public class StageManager : MonoBehaviour
 
     public void StageInit(string path)
     {
-        map = OpenMapFile(path);
         float x = 0;
-        float y = 0;
+        float y = -0.64f;
+        int numX = 1;
+        int numY = 1;
+
+        map = OpenMapFile(path);
+        MapBackgroundData data = OpenMbgFile(path);
+        cameraObject.backgroundColor = data.backcolor;
+        Texture2D tex = Resources.Load(data.background.Replace("Assets/Resources/", "").Split('.')[0]) as Texture2D;
 
         GameObject stage = GameObject.Find("Stage");
-
         foreach (Transform n in stage.transform)
         {
             GameObject.Destroy(n.gameObject);
         }
+
+        GameObject background = new GameObject("Background");
+        background.transform.parent = stage.transform;
+
+        if (tex != null)
+        {
+            if (data.loopXFlag && data.loopYFlag)
+            {
+                numX = (int)(chipSizeX * 100 * map.GetLength(1) / tex.width) + 1;
+                numY = (int)(chipSizeY * 100 * map.GetLength(0) / tex.height) + 1;
+            }
+            else if (data.loopXFlag)
+            {
+                numX = (int)(chipSizeX * 100 * map.GetLength(1) / tex.width) + 1;
+            }
+            else if (data.loopYFlag)
+            {
+                numY = (int)(chipSizeY * 100 * map.GetLength(0) / tex.height) + 1;
+            }
+
+            GameObject prefab = (GameObject)Resources.Load("Prefabs/ImagePrefab");
+
+            for (int yy = 0; yy < numY; yy++)
+            {
+                x = 0;
+                for (int xx = 0; xx < numX; xx++)
+                {
+                    GameObject ins = Instantiate(prefab, new Vector3(x, y, 0), Quaternion.identity) as GameObject;
+                    ins.transform.GetComponent<SpriteRenderer>().sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), Vector2.zero);
+                    ins.transform.GetComponent<SpriteRenderer>().sortingOrder = -100;
+                    ins.transform.parent = background.transform;
+
+                    x += tex.width / 100;
+                }
+                y -= tex.height / 100;
+            }
+        }
+
+        x = 0;
+        y = 0;
 
         for (int i = map.GetLength(0) - 1; i >= 0; i--)
         {
@@ -125,6 +171,21 @@ public class StageManager : MonoBehaviour
         return null;
     }
 
+    private MapBackgroundData OpenMbgFile(string path)
+    {
+        path = "Assets/Resources/Map/Backgrounds/" + path + ".mbg";
+
+        if (System.IO.File.Exists(path))
+        {
+            StreamReader sr = new StreamReader(path, System.Text.Encoding.Default);
+            MapBackgroundData data = JsonUtility.FromJson<MapBackgroundData>(sr.ReadToEnd());
+
+            return data;
+        }
+
+        return new MapBackgroundData();
+    }
+
     public GameObject GetPlayer
     {
         get { return PlayerInstance; }
@@ -134,4 +195,29 @@ public class StageManager : MonoBehaviour
     {
         get { return map; }
     }
+}
+
+[System.Serializable]
+public class FoldOut
+{
+    public bool foldout = false;
+    public bool objectIsX = false;
+    public bool objectIsY = false;
+    public float objectX = 0;
+    public float objectY = 0;
+    public float objectLoopX = 0;
+    public float objectLoopY = 0;
+    public string obj = "";
+}
+
+[System.Serializable]
+public class MapBackgroundData
+{
+    public int mode = 0;
+    public string background = "";
+    public Color backcolor = new Color(119f / 255f, 211f / 255f, 255f / 255f);
+    public bool loopXFlag = false;
+    public bool loopYFlag = false;
+    public int objectSize = 0;
+    public FoldOut[] foldouts;
 }

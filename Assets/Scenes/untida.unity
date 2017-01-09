@@ -264,6 +264,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec77270280d8dcb4f91d5b3dce9d658c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  cameraObject: {fileID: 740156772}
   startMap: homo
   chipSizeX: 0.64
   chipSizeY: 0.64

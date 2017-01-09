@@ -1,11 +1,1 @@
-,,,,,,,,,,,,,,,,,,Ground|MapChip,,,,,,,Ground|MapChip,,,,Ground|MapChip,,,,Ground|MapChip,,,,,,,,,,,,,,,,
-,,Ground|MapChip,,,start,,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,,,,,,,,Ground|MapChip,,,,,,,areachange|o:-1:-1,,,,Ground|MapChip,,,,Ground|MapChip,,,,,,,,,,,,,,,,
-Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,,,,Ground|MapChip,,,,,,,,,,,,,,,,,areachange|o:-1:-1,,,,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,,,,,,,,,,,,,,,,
-,,Ground|MapChip,,,,,,Ground|MapChip,,,,,,,,,,,,,,,Ground|MapChip,Ground|MapChip,Ground|MapChip,,,,,,,,,,,,,,,,,,,,,,,,
-,,Ground|MapChip,,,,,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,,Ground|MapChip,Ground|MapChip,,,Ground|MapChip,Ground|MapChip,Ground|MapChip,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-Ground|MapChip,,Ground|MapChip,,Ground|MapChip,,,,Ground|MapChip,,,,,,,,,,areachange|a:4:4,,,,,,,,,,,,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,,,Ground|MapChip,,,,,,,,,,,,,
-Ground|MapChip,,Ground|MapChip,,Ground|MapChip,,,,Ground|MapChip,Ground|MapChip,Ground|MapChip,,,,,,,,areachange|a:4:4,,,Ground|MapChip,,,,,,,,,,,,,,,Ground|MapChip,,,,,,,,,,,,,
-,,,,,,,,,,,,,,Ground|MapChip,,,,areachange|a:4:4,,,,,,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,,,,,,,,,,,,,,,,,,,,,
-,,,,,,,,,,,,,,Ground|MapChip,,,,areachange|a:4:4,,,,,,,,,,,,,,,,,,Ground|MapChip,,,,,,,,,,,,,
-Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,,,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip
-
+{"mode":1,"background":"Assets/Resources/Textures/bg.png","backcolor":{"r":0.46666666865348818,"g":0.8274509906768799,"b":1.0,"a":1.0},"loopXFlag":true,"loopYFlag":false,"objectSize":1,"foldouts":[{"foldout":true,"objectIsX":true,"objectIsY":false,"objectX":0.0,"objectY":0.0,"objectLoopX":0.0,"objectLoopY":0.0,"obj":"Assets/Resources/Textures/Ground.png"}]}
