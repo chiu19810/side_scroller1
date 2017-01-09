@@ -192,6 +192,30 @@ public class PlayerController : MonoBehaviour
         if (!horiJumpFlag && !jumpMoveFlag && !isGround)
             moveSpeedChange = speed / 1.5f;
 
+        if (stage.getMap != null)
+        {
+            string[,] map = stage.getMap;
+            int mapX = map.GetLength(1);
+            int mapY = map.GetLength(0);
+            GameObject player = gameObject;
+            float playerW = boxCollider2D.size.x;
+            float playerH = boxCollider2D.size.y;
+
+            float x = player.transform.position.x;
+            float y = player.transform.position.y;
+            float stageSizeW = stage.chipSizeX * mapX;
+            float stageSizeH = stage.chipSizeY * mapY;
+
+            if (x - playerW / 2 < 0)
+            {
+                x = playerW / 2;
+            }
+            else if (x + playerW / 2 > stageSizeW)
+            {
+                x = stageSizeW - playerW / 2;
+            }
+        }
+
         rb.velocity = new Vector2(h * (speed - moveSpeedChange), rb.velocity.y);
     }
 

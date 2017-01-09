@@ -44,8 +44,6 @@ public class CameraController : MonoBehaviour
                 x = stageSizeW - cameraWidth / 2;
             }
 
-            
-
             cameraObject.transform.position = new Vector3(x, y, cameraObject.transform.position.z);
         }
 	}
