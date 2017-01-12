@@ -107,8 +107,10 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 256
   speed: 5
-  Sjump: 150
+  Sjump: 130
   Bjump: 220
+  playerW: 0.64
+  playerH: 0.64
 --- !u!212 &212000012146080026
 SpriteRenderer:
   m_ObjectHideFlags: 1

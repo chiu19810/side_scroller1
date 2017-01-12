@@ -11,9 +11,15 @@ public class StageManager : MonoBehaviour
     public float chipSizeY = -1;
 
     private GameObject PlayerInstance;
+    private GameObject player;
     private float playerX;
     private float playerY;
+    private bool dirLeft;
+    private bool dirRight;
+    private bool dirTop;
+    private bool dirBottom;
     private string[,] map;
+    private Vector2 startPos = Vector2.zero;
 
 	void Start ()
     {
@@ -36,7 +42,9 @@ public class StageManager : MonoBehaviour
         int numX = 1;
         int numY = 1;
 
-        map = OpenMapFile(path);
+        if ((map = OpenMapFile(path)) == null)
+            return;
+
         MapBackgroundData data = OpenMbgFile(path);
         cameraObject.backgroundColor = data.backcolor;
         Texture2D tex = Resources.Load(data.background.Replace("Assets/Resources/", "").Split('.')[0]) as Texture2D;
@@ -84,6 +92,7 @@ public class StageManager : MonoBehaviour
             }
         }
 
+        player = GameObject.Find("Player(Clone)");
         x = 0;
         y = 0;
 
@@ -94,11 +103,13 @@ public class StageManager : MonoBehaviour
             {
                 string[] stas = map[i, j].Split('|');
                 string prePath = stas[0];
-                
                 if (prePath != null && prePath != "")
                 {
                     if (prePath.IndexOf("Player") > -1)
-                        PlayerInstance.transform.position = new Vector2(x + chipSizeX / 2, y + chipSizeY / 2);
+                    {
+                        startPos = new Vector2(x + player.GetComponent<PlayerController>().getPlayerW / 2, y - player.GetComponent<PlayerController>().getPlayerH);
+                        PlayerInstance.transform.position = startPos;
+                    }
                     else
                     {
                         GameObject prefab = (GameObject)Resources.Load(prePath);
@@ -119,71 +130,88 @@ public class StageManager : MonoBehaviour
 
     private string[,] OpenMapFile(string path)
     {
-        path = "Assets/Resources/Map/" + path + ".map";
+        path = "Map/" + path;
 
-        if (!string.IsNullOrEmpty(path))
+        TextAsset ta = Resources.Load(path) as TextAsset;
+        if (ta == null)
+            return null;
+
+        dirLeft = false;
+        dirRight = false;
+        dirTop = false;
+        dirBottom = false;
+
+        if (ta.text.Split('?').Length > 1)
         {
-            string text = "";
-            int sizeX = 0;
-            int sizeY = 0;
-            int mapSizeX = -1;
-            int mapSizeY = -1;
+            string[] dir = ta.text.Split('?')[1].Split(':');
 
-            StreamReader sr = new StreamReader(path, System.Text.Encoding.Default);
-
-            while (sr.Peek() >= 0)
+            for (int i = 0; i < dir.Length; i++)
             {
-                string sb = sr.ReadLine();
-                if (sb != "")
+                if (dir[i].IndexOf("Left") > -1)
                 {
-                    text += sb + "!";
-                    mapSizeX = sizeX;
-                    sizeY++;
+                    dirLeft = true;
                 }
-
-                string[] mapLine = sb.Split(',');
-                sizeX = mapLine.Length;
-            }
-            sr.Close();
-
-            mapSizeY = sizeY;
-            string[,] map = new string[mapSizeY, mapSizeX];
-            for (int i = 0; i < mapSizeY; i++)
-            {
-                for (int j = 0; j < mapSizeX; j++)
+                else if (dir[i].IndexOf("Right") > -1)
                 {
-                    if (text.Split('!')[i].Split(',')[j].IndexOf("start") > -1)
-                        map[i, j] = "Player";
-                    else if (text.Split('!')[i].Split(',')[j].IndexOf("areachange") > -1)
-                        map[i, j] = "Prefabs/AreaChange|" + text.Split('!')[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text.Split('!')[i].Split(',')[j].Split('|')[1].Split(':')[1] + ":" + text.Split('!')[i].Split(',')[j].Split('|')[1].Split(':')[2];
-                    else if (text.Split('!')[i].Split(',')[j].IndexOf("MapChip") > -1)
-                        map[i, j] = "Prefabs/MapChip/" + text.Split('!')[i].Split(',')[j].Split('|')[0];
-                    else if (text.Split('!')[i].Split(',')[j].IndexOf("MapObject") > -1)
-                        map[i, j] = "Prefabs/MapObject/" + text.Split('!')[i].Split(',')[j].Split('|')[0];
-                    else
-                        map[i, j] = "";
+                    dirRight = true;
+                }
+                else if (dir[i].IndexOf("Top") > -1)
+                {
+                    dirTop = true;
+                }
+                else if (dir[i].IndexOf("Bottom") > -1)
+                {
+                    dirBottom = true;
                 }
             }
-
-            return map;
         }
 
-        return null;
+        string[] text = ta.text.Split("\n"[0]);
+        int sizeY = 0;
+        int mapSizeX = -1;
+        int mapSizeY = -1;
+        mapSizeX = text[0].Split(',').Length;
+
+        for (int i = 0; i < text.Length; i++)
+        {
+            if (text[i].TrimEnd().Replace("\n", "").Replace("\r", "") != "") sizeY++;
+        }
+
+        player = GameObject.Find("Player(Clone)");
+        mapSizeY = sizeY;
+        string[,] map = new string[mapSizeY, mapSizeX];
+        for (int i = 0; i < mapSizeY; i++)
+        {
+            for (int j = 0; j < mapSizeX; j++)
+            {
+                if (text[i].Split(',')[j].IndexOf("start") > -1)
+                {
+                    map[i, j] = "Player";
+                }
+                else if (text[i].Split(',')[j].IndexOf("areachange") > -1)
+                    map[i, j] = "Prefabs/AreaChange|" + text[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text[i].Split(',')[j].Split('|')[1].Split(':')[1] + ":" + text[i].Split(',')[j].Split('|')[1].Split(':')[2];
+                else if (text[i].Split(',')[j].IndexOf("MapChip") > -1)
+                    map[i, j] = "Prefabs/MapChip/" + text[i].Split(',')[j].Split('|')[0];
+                else if (text[i].Split(',')[j].IndexOf("MapObject") > -1)
+                    map[i, j] = "Prefabs/MapObject/" + text[i].Split(',')[j].Split('|')[0];
+                else
+                    map[i, j] = "";
+            }
+        }
+
+        return map;
     }
 
     private MapBackgroundData OpenMbgFile(string path)
     {
-        path = "Assets/Resources/Map/Backgrounds/" + path + ".mbg";
+        path = "Map/Backgrounds/" + path;
 
-        if (System.IO.File.Exists(path))
-        {
-            StreamReader sr = new StreamReader(path, System.Text.Encoding.Default);
-            MapBackgroundData data = JsonUtility.FromJson<MapBackgroundData>(sr.ReadToEnd());
+        TextAsset ta = Resources.Load(path) as TextAsset;
+        if (ta == null)
+            return new MapBackgroundData();
 
-            return data;
-        }
-
-        return new MapBackgroundData();
+        MapBackgroundData data = JsonUtility.FromJson<MapBackgroundData>(ta.text);
+        return data;
     }
 
     public GameObject GetPlayer
@@ -194,6 +222,31 @@ public class StageManager : MonoBehaviour
     public string[,] getMap
     {
         get { return map; }
+    }
+
+    public Vector2 getStartPos
+    {
+        get { return startPos; }
+    }
+
+    public bool DirLeft
+    {
+        get { return dirLeft; }
+    }
+
+    public bool DirRight
+    {
+        get { return dirRight; }
+    }
+
+    public bool DirTop
+    {
+        get { return dirTop; }
+    }
+
+    public bool DirBottom
+    {
+        get { return dirBottom; }
     }
 }
 

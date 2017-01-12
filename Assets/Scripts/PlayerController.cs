@@ -10,17 +10,22 @@ public class PlayerController : MonoBehaviour
     private bool isGround;
     private bool horiJumpFlag;
     private bool jumpMoveFlag;
+    private int startCount;
     private float jumpButtonFrame;
     private float jumpFrame;
     private float horiFrame;
     private float idolFrame;
     private float moveSpeedChange;
     private const float m_centerY = 0.32f;
+    private const float m_centerX = 0.48f;
+    private const float horiCount = 20;
 
     public LayerMask groundLayer = -1;
     public float speed = -1;
     public float Sjump = -1;
     public float Bjump = -1;
+    public float playerW = -1;
+    public float playerH = -1;
 
 	void Start ()
     {
@@ -32,6 +37,10 @@ public class PlayerController : MonoBehaviour
             Debug.Log("Bjumpが設定されていません！");
         if (groundLayer == -1)
             Debug.Log("groundLayerが設定されていません！");
+        if (playerW == -1)
+            Debug.Log("playerWが設定されていません！");
+        if (playerH == -1)
+            Debug.Log("playerHが設定されていません！");
 
         acon = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
@@ -41,6 +50,7 @@ public class PlayerController : MonoBehaviour
         isGround = false;
         horiJumpFlag = false;
         jumpMoveFlag = false;
+        startCount = 20;
 
         jumpButtonFrame = 0;
         jumpFrame = 0;
@@ -58,9 +68,20 @@ public class PlayerController : MonoBehaviour
     {
         Vector2 pos = transform.position;
         Vector2 groundCheck = new Vector2(pos.x, pos.y - (m_centerY * transform.localScale.y));
-        Vector2 groundArea = new Vector2(boxCollider2D.size.x * 0.48f, 0.08f);
+        Vector2 groundArea = new Vector2(boxCollider2D.size.x * m_centerX, 0.08f);
 
         isGround = Physics2D.OverlapArea(groundCheck + groundArea, groundCheck - groundArea, groundLayer);
+
+        if (!isGround)
+        {
+            float y = gameObject.transform.position.y;
+
+            if (y < -5)
+            {
+                gameObject.transform.position = stage.getStartPos;
+                rb.velocity = Vector2.zero;
+            }
+        }
     }
 
     private void Jump()
@@ -86,7 +107,7 @@ public class PlayerController : MonoBehaviour
             horiJumpFlag = false;
             moveSpeedChange = 0;
 
-            if (horiFrame > 25)
+            if (horiFrame > horiCount)
                 horiJumpFlag = true;
 
             if (jumpFrame == 0)
@@ -128,11 +149,20 @@ public class PlayerController : MonoBehaviour
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 
+        if (stage.getMap == null)
+            return;
+        
+        if (startCount > 0)
+        {
+            startCount--;
+            return;
+        }
+
         if (isGround)
         {
             moveSpeedChange = 0;
 
-            if (horiFrame < 25)
+            if (horiFrame < horiCount)
                 moveSpeedChange = speed / 2;
         }
         else
@@ -142,7 +172,18 @@ public class PlayerController : MonoBehaviour
 
             moveSpeedChange = speed / 3;
         }
-      
+
+        string[,] map = stage.getMap;
+        int mapX = map.GetLength(1);
+        int mapY = map.GetLength(0);
+        GameObject player = gameObject;
+        float playerW = boxCollider2D.size.x;
+        float playerH = boxCollider2D.size.y;
+        float x = player.transform.position.x;
+        float y = player.transform.position.y;
+        float stageSizeW = stage.chipSizeX * mapX;
+        float stageSizeH = stage.chipSizeY * mapY;
+
         if (h < 0)
         {
             acon.SetBool("Squat", false);
@@ -150,6 +191,11 @@ public class PlayerController : MonoBehaviour
             acon.SetBool("Left", true);
             acon.SetBool("Right", false);
             horiFrame++;
+
+            if (x - playerW / 2 <= 0)
+            {
+                h = 0;
+            }
         }
         else if (h > 0)
         {
@@ -158,6 +204,11 @@ public class PlayerController : MonoBehaviour
             acon.SetBool("Left", false);
             acon.SetBool("Right", true);
             horiFrame++;
+
+            if (x + playerW / 2 >= stageSizeW)
+            {
+                h = 0;
+            }
         }
         else
         {
@@ -192,30 +243,6 @@ public class PlayerController : MonoBehaviour
         if (!horiJumpFlag && !jumpMoveFlag && !isGround)
             moveSpeedChange = speed / 1.5f;
 
-        if (stage.getMap != null)
-        {
-            string[,] map = stage.getMap;
-            int mapX = map.GetLength(1);
-            int mapY = map.GetLength(0);
-            GameObject player = gameObject;
-            float playerW = boxCollider2D.size.x;
-            float playerH = boxCollider2D.size.y;
-
-            float x = player.transform.position.x;
-            float y = player.transform.position.y;
-            float stageSizeW = stage.chipSizeX * mapX;
-            float stageSizeH = stage.chipSizeY * mapY;
-
-            if (x - playerW / 2 < 0)
-            {
-                x = playerW / 2;
-            }
-            else if (x + playerW / 2 > stageSizeW)
-            {
-                x = stageSizeW - playerW / 2;
-            }
-        }
-
         rb.velocity = new Vector2(h * (speed - moveSpeedChange), rb.velocity.y);
     }
 
@@ -227,10 +254,22 @@ public class PlayerController : MonoBehaviour
             float chipX = stage.chipSizeX;
             float chipY = stage.chipSizeY;
 
+            startCount = 20;
             stage.StageInit(stas[0]);
+            rb.velocity = Vector2.zero;
 
             if (stas[1] != "-1" && stas[2] != "-1")
-                stage.GetPlayer.transform.position = new Vector2(chipX * int.Parse(stas[1]) + chipX / 2, chipY * int.Parse(stas[2]) + chipY / 2);
+                stage.GetPlayer.transform.position = new Vector2(chipX * int.Parse(stas[1]) + m_centerX / 2, chipY * int.Parse(stas[2]) + m_centerY / 2);
         }
+    }
+
+    public float getPlayerW
+    {
+        get { return playerW; }
+    }
+
+    public float getPlayerH
+    {
+        get { return playerH; }
     }
 }

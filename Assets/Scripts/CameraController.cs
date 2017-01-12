@@ -34,17 +34,57 @@ public class CameraController : MonoBehaviour
             float y = player.transform.position.y;
             float stageSizeW = stage.chipSizeX * mapX;
             float stageSizeH = stage.chipSizeY * mapY;
+            float lef = 0;
+            float rig = 0;
+            float top = 0;
+            float bot = 0;
 
-            if (x - cameraWidth / 2 < 0)
+            if (stage.DirLeft)
             {
-                x = cameraWidth / 2;
-            }
-            else if (x + cameraWidth / 2 > stageSizeW)
-            {
-                x = stageSizeW - cameraWidth / 2;
+                lef = stage.chipSizeX;
             }
 
-            cameraObject.transform.position = new Vector3(x, y, cameraObject.transform.position.z);
+            if (stage.DirRight)
+            {
+                rig = stage.chipSizeX;
+            }
+
+            if (stage.DirTop)
+            {
+                top = stage.chipSizeX;
+            }
+
+            if (stage.DirBottom)
+            {
+                bot = stage.chipSizeX;
+            }
+
+            if (x - cameraWidth / 2 - lef < 0)
+                x = cameraWidth / 2 + lef;
+            else if (x + cameraWidth / 2 + rig > stageSizeW)
+                x = stageSizeW - cameraWidth / 2 - rig;
+
+            if (y - cameraHeight / 2 + stage.chipSizeY - bot < 0)
+                y = cameraHeight / 2 - stage.chipSizeY + bot;
+            else if (y + cameraHeight / 2 + stage.chipSizeY + bot > stageSizeH)
+                y = stageSizeH - cameraHeight / 2 - stage.chipSizeY - bot;
+
+            if (cameraWidth > stageSizeW && cameraHeight > stageSizeH - bot)
+            {
+                cameraObject.transform.position = new Vector3(stageSizeW / 2, (stageSizeH - bot / 2) / 2, cameraObject.transform.position.z);
+            }
+            else if (cameraWidth > stageSizeW)
+            {
+                cameraObject.transform.position = new Vector3(stageSizeW / 2, y, cameraObject.transform.position.z);
+            }
+            else if (cameraHeight > stageSizeH - bot)
+            {
+                cameraObject.transform.position = new Vector3(x, (stageSizeH - bot / 2) / 2, cameraObject.transform.position.z);
+            }
+            else
+            {
+                cameraObject.transform.position = new Vector3(x, y, cameraObject.transform.position.z);
+            }
         }
 	}
 }
