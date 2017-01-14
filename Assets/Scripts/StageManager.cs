@@ -20,8 +20,9 @@ public class StageManager : MonoBehaviour
     private bool dirBottom;
     private string[,] map;
     private Vector2 startPos = Vector2.zero;
+    private AudioSource audioSource;
 
-	void Start ()
+    void Start ()
     {
         if (startMap == "")
             Debug.Log("startMapが設定されていません！");
@@ -45,6 +46,7 @@ public class StageManager : MonoBehaviour
         if ((map = OpenMapFile(path)) == null)
             return;
 
+        // 背景ロード
         MapBackgroundData data = OpenMbgFile(path);
         cameraObject.backgroundColor = data.backcolor;
         Texture2D tex = Resources.Load(data.background.Replace("Assets/Resources/", "").Split('.')[0]) as Texture2D;
@@ -92,6 +94,10 @@ public class StageManager : MonoBehaviour
             }
         }
 
+        // BGMロード
+        OpenBGMFile(path);
+
+        // ステージロード
         player = GameObject.Find("Player(Clone)");
         x = 0;
         y = 0;
@@ -212,6 +218,17 @@ public class StageManager : MonoBehaviour
 
         MapBackgroundData data = JsonUtility.FromJson<MapBackgroundData>(ta.text);
         return data;
+    }
+
+    private void OpenBGMFile(string path)
+    {
+        path = "Sounds/BGM/" + path;
+
+        AudioClip clip = Resources.Load(path) as AudioClip;
+        Destroy(audioSource);
+        audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.clip = clip;
+        audioSource.Play();
     }
 
     public GameObject GetPlayer
