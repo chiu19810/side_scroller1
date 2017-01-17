@@ -210,7 +210,20 @@ public class StageManager : MonoBehaviour
                 if (text[i].Split(',')[j].IndexOf("start") > -1)
                     map[i, j] = "Player";
                 else if (text[i].Split(',')[j].IndexOf("areachange") > -1)
-                    map[i, j] = "Prefabs/AreaChange|" + text[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text[i].Split(',')[j].Split('|')[1].Split(':')[1] + ":" + text[i].Split(',')[j].Split('|')[1].Split(':')[2];
+                    map[i, j] = "Prefabs/AreaChange|" + text[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text[i].Split(',')[j].Split('|')[1];
+                else if (text[i].Split(',')[j].Split('|')[0].IndexOf("event") > -1)
+                {
+                    if (text[i].Split(',')[j].Split('|')[1].Split(':')[3] == "0")
+                        map[i, j] = "Prefabs/EventPrefab|" + text[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text[i].Split(',')[j].Split('|')[1];
+                    else if (text[i].Split(',')[j].Split('|')[1].Split(':')[3] == "1")
+                        map[i, j] = "Prefabs/EventTopPrefab|" + text[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text[i].Split(',')[j].Split('|')[1];
+                    else if (text[i].Split(',')[j].Split('|')[1].Split(':')[3] == "2")
+                        map[i, j] = "Prefabs/EventBottomPrefab|" + text[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text[i].Split(',')[j].Split('|')[1];
+                    else if (text[i].Split(',')[j].Split('|')[1].Split(':')[3] == "3")
+                        map[i, j] = "Prefabs/EventLeftPrefab|" + text[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text[i].Split(',')[j].Split('|')[1];
+                    else if (text[i].Split(',')[j].Split('|')[1].Split(':')[3] == "4")
+                        map[i, j] = "Prefabs/EventRightPrefab|" + text[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text[i].Split(',')[j].Split('|')[1];
+                }
                 else if (text[i].Split(',')[j].IndexOf("MapChip") > -1)
                     map[i, j] = "Prefabs/MapChip/" + text[i].Split(',')[j].Split('|')[0];
                 else if (text[i].Split(',')[j].IndexOf("MapObject") > -1)
@@ -220,8 +233,19 @@ public class StageManager : MonoBehaviour
 
                 if (text[i].Split(',')[j].Split('#').Length > 1)
                 {
-                    if (text[i].Split(',')[j].IndexOf("event") > -1)
-                        map[i, j] = map[i, j].Split('#')[0] + "#Prefabs/EventPrefab|" + text[i].Split(',')[j].Split('#')[1].Split('|')[1];
+                    if (text[i].Split(',')[j].Split('#')[1].IndexOf("event") > -1)
+                    {
+                        if (text[i].Split(',')[j].Split('#')[1].Split('|')[1].Split(':')[3] == "0")
+                            map[i, j] = map[i, j].Split('#')[0] + "#Prefabs/EventPrefab|" + text[i].Split(',')[j].Split('#')[1].Split('|')[1];
+                        else if (text[i].Split(',')[j].Split('#')[1].Split('|')[1].Split(':')[3] == "1")
+                            map[i, j] = map[i, j].Split('#')[0] + "#Prefabs/EventTopPrefab|" + text[i].Split(',')[j].Split('#')[1].Split('|')[1];
+                        else if (text[i].Split(',')[j].Split('#')[1].Split('|')[1].Split(':')[3] == "2")
+                            map[i, j] = map[i, j].Split('#')[0] + "#Prefabs/EventBottomPrefab|" + text[i].Split(',')[j].Split('#')[1].Split('|')[1];
+                        else if (text[i].Split(',')[j].Split('#')[1].Split('|')[1].Split(':')[3] == "3")
+                            map[i, j] = map[i, j].Split('#')[0] + "#Prefabs/EventLeftPrefab|" + text[i].Split(',')[j].Split('#')[1].Split('|')[1];
+                        else if (text[i].Split(',')[j].Split('#')[1].Split('|')[1].Split(':')[3] == "4")
+                            map[i, j] = map[i, j].Split('#')[0] + "#Prefabs/EventRightPrefab|" + text[i].Split(',')[j].Split('#')[1].Split('|')[1];
+                    }
                 }
             }
         }

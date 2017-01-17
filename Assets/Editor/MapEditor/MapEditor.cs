@@ -24,6 +24,7 @@ public class MapEditor : EditorWindow
     private string eventCond;
     private string eventID;
     private string eventFlagID;
+    private string eventCol;
     private string chipSearchPath = "Assets/Resources/Prefabs/MapChip/";
     private string objectSearchPath = "Assets/Resources/Prefabs/MapObject/";
     private string defaultMapDirectory = "Assets/Resources/Map/Stages/";
@@ -80,6 +81,7 @@ public class MapEditor : EditorWindow
         eventCond = "0";
         eventID = "0";
         eventFlagID = "0";
+        eventCol = "0";
         selectedRightImagePath = "Assets/Editor/MapEditor/eraser.png";
     }
 
@@ -184,7 +186,7 @@ public class MapEditor : EditorWindow
                 selectedLeftImagePath = path;
         }
 
-        path = "Assets/Editor/MapEditor/event.png|0:0:0";
+        path = "Assets/Editor/MapEditor/event.png|0:0:0:0";
         tex = (Texture2D)AssetDatabase.LoadAssetAtPath(path.Split('|')[0], typeof(Texture2D));
         if (GUILayout.Button(tex, GUILayout.MaxWidth(w), GUILayout.MaxHeight(h), GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false)))
         {
@@ -345,6 +347,8 @@ public class MapEditor : EditorWindow
                     eventCond = eves[0];
                     eventID = eves[1];
                     eventFlagID = eves[2];
+                    if (eves.Length > 3)
+                        eventCol = eves[3];
                 }
 
                 EditorGUILayout.BeginVertical();
@@ -364,6 +368,8 @@ public class MapEditor : EditorWindow
                     eventFlagID = EditorGUILayout.IntField(int.Parse(eventFlagID)).ToString();
                     EditorGUILayout.EndHorizontal();
                 }
+
+                eventCol = EditorGUILayout.Popup("当たり判定 : ", int.Parse(eventCol), new string[] { "全", "上", "下", "左", "右" }, style).ToString();
 
                 EditorGUILayout.EndVertical();
 
@@ -554,6 +560,11 @@ public class MapEditor : EditorWindow
     public string EventFlagID
     {
         get { return eventFlagID; }
+    }
+
+    public string EventCol
+    {
+        get { return eventCol; }
     }
 
     public string DefaultMapDirectory
@@ -889,7 +900,7 @@ public class MapEditorSubWindow : EditorWindow
                         {
                             flag = true;
                             string[] eves = map[mouseY, mouseX].Split('#');
-                            string set = "Assets/Editor/MapEditor/event_chip.png" + "|" + parent.EventCond + ":" + parent.EventID + ":" + parent.EventFlagID;
+                            string set = "Assets/Editor/MapEditor/event_chip.png" + "|" + parent.EventCond + ":" + parent.EventID + ":" + parent.EventFlagID + ":" + parent.EventCol;
 
                             if (map[mouseY, mouseX] != "" && !(eves[0].IndexOf("event") > -1))
                                 map[mouseY, mouseX] = eves[0] + "#" + set;
@@ -969,8 +980,12 @@ public class MapEditorSubWindow : EditorWindow
                 string eventCond = maps[0] == "0" ? "自動発火" : maps[0] == "1" ? "触れた時" : maps[0] == "2" ? "フラグが建った時" : "";
                 int eventID = int.Parse(maps[1]);
                 int eventFlagID = int.Parse(maps[2]);
-                
-                status = "イベント発火条件 : " + eventCond + " / イベントID : " + eventID + (eventCond == "フラグが建った時" ? " / イベントフラグ : " + eventFlagID.ToString() : "");
+                string eventCol = "";
+
+                if (maps.Length > 3)
+                    eventCol = maps[3] == "0" ? "全" : maps[3] == "1" ? "上" : maps[3] == "2" ? "下" : maps[3] == "3" ? "左" : maps[3] == "4" ? "右" : "";
+
+                status = "イベント発火条件 : " + eventCond + " / イベントID : " + eventID + (eventCond == "フラグが建った時" ? " / イベントフラグ : " + eventFlagID.ToString() : "") + " / 当たり判定 : " + eventCol;
             }
             else if (!(stas[0].IndexOf("start") > -1))
             {
@@ -987,8 +1002,12 @@ public class MapEditorSubWindow : EditorWindow
                 string eventCond = maps[0] == "0" ? "自動発火" : maps[0] == "1" ? "触れた時" : maps[0] == "2" ? "フラグが建った時" : "";
                 int eventID = int.Parse(maps[1]);
                 int eventFlagID = int.Parse(maps[2]);
+                string eventCol = "";
 
-                status = status + "\nイベント発火条件 : " + eventCond + " / イベントID : " + eventID + (eventCond == "フラグが建った時" ? " / イベントフラグ : " + eventFlagID.ToString() : "");
+                if (maps.Length > 3)
+                    eventCol = maps[3] == "0" ? "全" : maps[3] == "1" ? "上" : maps[3] == "2" ? "下" : maps[3] == "3" ? "左" : maps[3] == "4" ? "右" : "";
+
+                status = status + "\nイベント発火条件 : " + eventCond + " / イベントID : " + eventID + (eventCond == "フラグが建った時" ? " / イベントフラグ : " + eventFlagID.ToString() : "") + " / 当たり判定 : " + eventCol;
             }
         }
         else
@@ -1325,7 +1344,9 @@ public class MapEditorSubWindow : EditorWindow
                     if (text.Split('!')[i].Split(',')[j].IndexOf("start") > -1)
                         map[i, j] = "Assets/Editor/MapEditor/" + text.Split('!')[i].Split(',')[j] + ".png";
                     else if (text.Split('!')[i].Split(',')[j].IndexOf("areachange") > -1)
-                        map[i, j] = "Assets/Editor/MapEditor/" + text.Split('!')[i].Split(',')[j].Split('|')[0] + ".png|" + text.Split('!')[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text.Split('!')[i].Split(',')[j].Split('|')[1].Split(':')[1] + ":" + text.Split('!')[i].Split(',')[j].Split('|')[1].Split(':')[2];
+                        map[i, j] = "Assets/Editor/MapEditor/" + text.Split('!')[i].Split(',')[j].Split('|')[0] + ".png|" + text.Split('!')[i].Split(',')[j].Split('|')[1];
+                    else if (text.Split('!')[i].Split(',')[j].Split('|')[0].IndexOf("event") > -1)
+                        map[i, j] = "Assets/Editor/MapEditor/event_chip.png|" + text.Split('!')[i].Split(',')[j].Split('|')[1];
                     else if (text.Split('!')[i].Split(',')[j].IndexOf("MapChip") > -1)
                         map[i, j] = "Assets/Resources/Prefabs/MapChip/" + text.Split('!')[i].Split(',')[j].Split('|')[0] + ".prefab|" + text.Split('!')[i].Split(',')[j].Split('|')[1];
                     else if (text.Split('!')[i].Split(',')[j].IndexOf("MapObject") > -1)
