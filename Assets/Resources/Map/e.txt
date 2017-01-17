@@ -1,3 +1,0 @@
-areachange|homo:-1:-1|homo:-1:-1,,,,,,,,,areachange|a:-1:-1|a:-1:-1
-areachange|homo:-1:-1|homo:-1:-1,,,,start,,,,,areachange|a:-1:-1|a:-1:-1
-Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip,Ground|MapChip

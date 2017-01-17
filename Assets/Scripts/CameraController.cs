@@ -59,15 +59,15 @@ public class CameraController : MonoBehaviour
                 bot = stage.chipSizeX;
             }
 
-            if (x - cameraWidth / 2 - lef < 0)
-                x = cameraWidth / 2 + lef;
-            else if (x + cameraWidth / 2 + rig > stageSizeW)
-                x = stageSizeW - cameraWidth / 2 - rig;
+            if (x - cameraWidth / 2 + stage.chipSizeX / 2 - lef < 0)
+                x = cameraWidth / 2 - stage.chipSizeX / 2 + lef;
+            else if (x + cameraWidth / 2 + stage.chipSizeX / 2 + rig > stageSizeW)
+                x = stageSizeW - cameraWidth / 2 - stage.chipSizeX / 2 - rig;
 
-            if (y - cameraHeight / 2 + stage.chipSizeY - bot < 0)
-                y = cameraHeight / 2 - stage.chipSizeY + bot;
-            else if (y + cameraHeight / 2 + stage.chipSizeY + bot > stageSizeH)
-                y = stageSizeH - cameraHeight / 2 - stage.chipSizeY - bot;
+            if (y - cameraHeight / 2 + stage.chipSizeY / 2 - bot < 0)
+                y = cameraHeight / 2 - stage.chipSizeY / 2 + bot;
+            else if (y + cameraHeight / 2 + stage.chipSizeY / 2 + bot > stageSizeH)
+                y = stageSizeH - cameraHeight / 2 - stage.chipSizeY / 2 - bot;
 
             if (cameraWidth > stageSizeW && cameraHeight > stageSizeH - bot)
             {

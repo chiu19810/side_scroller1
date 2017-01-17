@@ -1,0 +1,15 @@
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,areachange|2:-1:-1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,areachange|2:-1:-1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,areachange|2:-1:-1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,areachange|2:-1:-1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,areachange|2:-1:-1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,areachange|2:-1:-1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,areachange|2:-1:-1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,areachange|2:-1:-1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,areachange|2:-1:-1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,areachange|2:-1:-1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,areachange|2:-1:-1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,areachange|2:-1:-1
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,areachange|2:-1:-1
+start,,,,,,,,,,,,,,,,,,,,,,,,,,,,,areachange|2:-1:-1
+Ground2|MapChip,Ground2|MapChip,Ground2|MapChip,Ground2|MapChip,,,Ground2|MapChip,,,,Ground2|MapChip,Ground2|MapChip,,,,Ground2|MapChip,Ground2|MapChip,,,,Ground2|MapChip,Ground2|MapChip,Ground2|MapChip,Ground2|MapChip,Ground2|MapChip,Ground2|MapChip,Ground2|MapChip,Ground2|MapChip,Ground2|MapChip,Ground2|MapChip?Right

@@ -4,6 +4,7 @@ using System.Collections;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 /// <summary>
 /// Map creater 
@@ -20,19 +21,24 @@ public class MapEditor : EditorWindow
     private string areaChangeMapName;
     private string areaChangeMapX;
     private string areaChangeMapY;
+    private string eventCond;
+    private string eventID;
+    private string eventFlagID;
     private string chipSearchPath = "Assets/Resources/Prefabs/MapChip/";
     private string objectSearchPath = "Assets/Resources/Prefabs/MapObject/";
-    private string defaultMapDirectory = "Assets/Resources/Map/";
+    private string defaultMapDirectory = "Assets/Resources/Map/Stages/";
     private string defaultBackgroundDirectory = "Assets/Resources/Map/Backgrounds/";
+    private string defaultEventDirectory = "Assets/Resources/Map/Events/";
 
-    private List<string> mapChipList = new List<string>();
-    private List<string> mapObjectList = new List<string>();
+    private List<GameObject> mapChipList = new List<GameObject>();
+    private List<GameObject> mapObjectList = new List<GameObject>();
     private Vector2 ToolSelectBoxScrollPos = Vector2.zero;
     private Vector2 ChipSelectBoxScrollPos = Vector2.zero;
     private Vector2 ObjectSelectBoxScrollPos = Vector2.zero;
 
 	public MapEditorSubWindow subWindow;
     public MapEditorBackGroundWindow bgWindow;
+    public MapEditorEventWindow evWindow;
 
     [UnityEditor.MenuItem("Window/MapEditor")]
 	static void ShowTestMainWindow(){
@@ -44,6 +50,7 @@ public class MapEditor : EditorWindow
     public void init()
     {
         mapChipList.Clear();
+        mapObjectList.Clear();
 
         string[] filePaths = Directory.GetFiles(chipSearchPath, "*.prefab");
         foreach (string filePath in filePaths)
@@ -52,7 +59,7 @@ public class MapEditor : EditorWindow
             GameObject obj = AssetDatabase.LoadAssetAtPath(path, typeof(GameObject)) as GameObject;
             if (obj != null)
             {
-                mapChipList.Add(AssetDatabase.GetAssetPath(obj.GetComponent<SpriteRenderer>().sprite));
+                mapChipList.Add(obj);
             }
         }
 
@@ -63,13 +70,16 @@ public class MapEditor : EditorWindow
             GameObject obj = AssetDatabase.LoadAssetAtPath(path, typeof(GameObject)) as GameObject;
             if (obj != null)
             {
-                mapObjectList.Add(AssetDatabase.GetAssetPath(obj.GetComponent<SpriteRenderer>().sprite));
+                mapObjectList.Add(obj);
             }
         }
 
         areaChangeMapName = "";
         areaChangeMapX = "-1";
         areaChangeMapY = "-1";
+        eventCond = "0";
+        eventID = "0";
+        eventFlagID = "0";
         selectedRightImagePath = "Assets/Editor/MapEditor/eraser.png";
     }
 
@@ -102,7 +112,7 @@ public class MapEditor : EditorWindow
 
         if (GUILayout.Button("Reload", GUILayout.Height(50)))
         {
-            this.init();
+            init();
             Repaint();
 
             if (subWindow != null)
@@ -133,13 +143,9 @@ public class MapEditor : EditorWindow
         {
             Event e = Event.current;
             if (e.button == 1)
-            {
                 selectedRightImagePath = path;
-            }
             else
-            {
                 selectedLeftImagePath = path;
-            }
         }
 
         path = "Assets/Editor/MapEditor/zoom_in.png";
@@ -162,13 +168,9 @@ public class MapEditor : EditorWindow
         {
             Event e = Event.current;
             if (e.button == 1)
-            {
                 selectedRightImagePath = path;
-            }
             else
-            {
                 selectedLeftImagePath = path;
-            }
         }
 
         path = "Assets/Editor/MapEditor/areachange.png|:-1:-1";
@@ -177,13 +179,20 @@ public class MapEditor : EditorWindow
         {
             Event e = Event.current;
             if (e.button == 1)
-            {
                 selectedRightImagePath = path;
-            }
             else
-            {
                 selectedLeftImagePath = path;
-            }
+        }
+
+        path = "Assets/Editor/MapEditor/event.png|0:0:0";
+        tex = (Texture2D)AssetDatabase.LoadAssetAtPath(path.Split('|')[0], typeof(Texture2D));
+        if (GUILayout.Button(tex, GUILayout.MaxWidth(w), GUILayout.MaxHeight(h), GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false)))
+        {
+            Event e = Event.current;
+            if (e.button == 1)
+                selectedRightImagePath = path;
+            else
+                selectedLeftImagePath = path;
         }
 
         EditorGUILayout.EndHorizontal();
@@ -195,28 +204,28 @@ public class MapEditor : EditorWindow
         workArea = GUILayoutUtility.GetRect(10, 10000, 10, 200);
         ChipSelectBoxScrollPos = GUI.BeginScrollView(workArea, ChipSelectBoxScrollPos, new Rect(0, 0, winMaxW, h * (mapChipList.Count / (maxW / h))), false, true);
 
-        foreach (string d in mapChipList)
+        foreach (GameObject d in mapChipList)
         {
+            if (d == null)
+                continue;
+
             if (x > maxW)
             {
                 x = 0.0f;
                 y += h + 4;
             }
 
-            tex = (Texture2D)AssetDatabase.LoadAssetAtPath(d, typeof(Texture2D));
+            string texPath = AssetDatabase.GetAssetPath(d.GetComponent<SpriteRenderer>().sprite);
+            tex = (Texture2D)AssetDatabase.LoadAssetAtPath(texPath, typeof(Texture2D));
 
             GUILayout.BeginArea(new Rect(x, y, w, h));
             if (GUILayout.Button(tex, GUILayout.MaxWidth(w), GUILayout.MaxHeight(h), GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false)))
             {
                 Event e = Event.current;
                 if (e.button == 1)
-                {
-                    selectedRightImagePath = d + "|MapChip";
-                }
+                    selectedRightImagePath = AssetDatabase.GetAssetPath(d) + "|MapChip";
                 else
-                {
-                    selectedLeftImagePath = d + "|MapChip";
-                }
+                    selectedLeftImagePath = AssetDatabase.GetAssetPath(d) + "|MapChip";
             }
             GUILayout.EndArea();
             x += w + 4;
@@ -230,7 +239,7 @@ public class MapEditor : EditorWindow
         workArea = GUILayoutUtility.GetRect(10, 10000, 10, 200);
         ObjectSelectBoxScrollPos = GUI.BeginScrollView(workArea, ObjectSelectBoxScrollPos, new Rect(0, 0, winMaxW, h * (mapObjectList.Count / (maxW / h))), false, true);
 
-        foreach (string d in mapObjectList)
+        foreach (GameObject d in mapObjectList)
         {
             if (x2 > maxW)
             {
@@ -238,20 +247,17 @@ public class MapEditor : EditorWindow
                 y2 += h + 4;
             }
 
-            tex = (Texture2D)AssetDatabase.LoadAssetAtPath(d, typeof(Texture2D));
+            string texPath = AssetDatabase.GetAssetPath(d.GetComponent<SpriteRenderer>().sprite);
+            tex = (Texture2D)AssetDatabase.LoadAssetAtPath(texPath, typeof(Texture2D));
 
             GUILayout.BeginArea(new Rect(x2, y2, w, h));
             if (GUILayout.Button(tex, GUILayout.MaxWidth(w), GUILayout.MaxHeight(h), GUILayout.ExpandWidth(false), GUILayout.ExpandHeight(false)))
             {
                 Event e = Event.current;
                 if (e.button == 1)
-                {
-                    selectedRightImagePath = d + "|MapObject";
-                }
+                    selectedRightImagePath = AssetDatabase.GetAssetPath(d) + "|MapObject";
                 else
-                {
-                    selectedLeftImagePath = d + "|MapObject";
-                }
+                    selectedLeftImagePath = AssetDatabase.GetAssetPath(d) + "|MapObject";
             }
             GUILayout.EndArea();
             x2 += w + 4;
@@ -276,13 +282,22 @@ public class MapEditor : EditorWindow
                 break;
         }
 
-		if (selectedImagePath != null)
+		if (selectedImagePath != null && selectedImagePath != "")
         {
             string[] stus = selectedImagePath.Split('|');
 			GUILayout.Label("select " + mode + " : " + stus[0]);
             EditorGUILayout.BeginHorizontal();
-			Texture2D tex = (Texture2D)AssetDatabase.LoadAssetAtPath(stus[0], typeof(Texture2D));
-			GUILayout.Box(tex);
+            Texture2D tex;
+
+            if (stus[0] == "")
+                stus[0] = "Assets/Editor/MapEditor/none.png";
+
+            if (stus[0].IndexOf("none") > -1 || stus[0].IndexOf("eraser") > -1 || stus[0].IndexOf("areachange") > -1 || stus[0].IndexOf("start") > -1 || stus[0].IndexOf("event") > -1)
+                tex = (Texture2D)AssetDatabase.LoadAssetAtPath(stus[0], typeof(Texture2D));
+            else
+                tex = (Texture2D)AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath((AssetDatabase.LoadAssetAtPath(stus[0], typeof(GameObject)) as GameObject).GetComponent<SpriteRenderer>().sprite), typeof(Texture2D));
+
+            GUILayout.Box(tex);
             if (stus[0].IndexOf("areachange") > -1)
             {
                 if (areaChangeMapX == "")
@@ -301,7 +316,7 @@ public class MapEditor : EditorWindow
 
                 EditorGUILayout.BeginVertical();
                 GUILayout.Label("エリア移動先（マップ名） : ", GUILayout.Width(150));
-                areaChangeMapName = (string)EditorGUILayout.TextField(areaChangeMapName);
+                areaChangeMapName = EditorGUILayout.TextField(areaChangeMapName);
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.Label("X（マス） : ", GUILayout.Width(150));
                 areaChangeMapX = EditorGUILayout.IntField(int.Parse(areaChangeMapX)).ToString();
@@ -322,6 +337,47 @@ public class MapEditor : EditorWindow
                         break;
                 }
             }
+            else if (stus[0].IndexOf("event") > -1)
+            {
+                if (stus[1] != "")
+                {
+                    string[] eves = stus[1].Split(':');
+                    eventCond = eves[0];
+                    eventID = eves[1];
+                    eventFlagID = eves[2];
+                }
+
+                EditorGUILayout.BeginVertical();
+                GUIStyle style = new GUIStyle("Popup");
+                style.fontSize = 12;
+                eventCond = EditorGUILayout.Popup("発火条件 : ", int.Parse(eventCond), new string[] { "自動発火", "触れた時", "フラグが建った時" }, style).ToString();
+
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Label("呼び出しイベントID : ", GUILayout.Width(150));
+                eventID = EditorGUILayout.IntField(int.Parse(eventID)).ToString();
+                EditorGUILayout.EndHorizontal();
+
+                if (eventCond == "2")
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Label("フラグID : ", GUILayout.Width(150));
+                    eventFlagID = EditorGUILayout.IntField(int.Parse(eventFlagID)).ToString();
+                    EditorGUILayout.EndHorizontal();
+                }
+
+                EditorGUILayout.EndVertical();
+
+                switch (mode)
+                {
+                    case "left":
+                        selectedLeftImagePath = stus[0] + "|" + eventCond + ":" + eventID + ":" + eventFlagID;
+                        break;
+                    case "right":
+                        selectedRightImagePath = stus[0] + "|" + eventCond + ":" + eventID + ":" + eventFlagID;
+                        break;
+                }
+            }
+
             EditorGUILayout.EndHorizontal();
 		}
         else
@@ -339,7 +395,7 @@ public class MapEditor : EditorWindow
         {
             if (subWindow != null)
             {
-                if (subWindow.MapSaveFlag)
+                if (subWindow.SaveFlag)
                 {
                     if (!EditorUtility.DisplayDialog("MapEditor 警告", "変更が保存されていませんが、新しくマップウィンドウを開きますか？", " はい ", " いいえ "))
                     {
@@ -356,11 +412,23 @@ public class MapEditor : EditorWindow
                 subWindow.WillAppear2(this);
             }
 
-            subWindow.Focus();
+            if (subWindow != null)
+                subWindow.Focus();
         }
 
         if (GUILayout.Button("Open BackGround Editor", GUILayout.Height(20)))
         {
+            if (bgWindow != null)
+            {
+                if (bgWindow.SaveFlag)
+                {
+                    if (!EditorUtility.DisplayDialog("MapEditor 警告", "変更が保存されていませんが、新しくマップウィンドウを開きますか？", " はい ", " いいえ "))
+                    {
+                        return;
+                    }
+                }
+            }
+
             if (subWindow == null)
                 bgWindow = MapEditorBackGroundWindow.WillAppear(this);
             else
@@ -369,7 +437,27 @@ public class MapEditor : EditorWindow
                 bgWindow.WillAppear2(this);
             }
 
-            bgWindow.Focus();
+            if (bgWindow != null)
+                bgWindow.Focus();
+        }
+
+        if (GUILayout.Button("Open Event Editor", GUILayout.Height(20)))
+        {
+            if (evWindow != null)
+            {
+                if (evWindow.SaveFlag)
+                {
+                    if (!EditorUtility.DisplayDialog("MapEditor 警告", "変更が保存されていませんが、新しくマップウィンドウを開きますか？", " はい ", " いいえ "))
+                    {
+                        return;
+                    }
+                }
+            }
+
+            evWindow = MapEditorEventWindow.WillAppear(this);
+
+            if (evWindow != null)
+                evWindow.Focus();
         }
     }
 
@@ -453,6 +541,21 @@ public class MapEditor : EditorWindow
         get { return areaChangeMapY; }
     }
 
+    public string EventCond
+    {
+        get { return eventCond; }
+    }
+
+    public string EventID
+    {
+        get { return eventID; }
+    }
+
+    public string EventFlagID
+    {
+        get { return eventFlagID; }
+    }
+
     public string DefaultMapDirectory
     {
         get { return defaultMapDirectory; }
@@ -461,6 +564,11 @@ public class MapEditor : EditorWindow
     public string DefaultBackgroundDirectory
     {
         get { return defaultBackgroundDirectory; }
+    }
+
+    public string DefaultEventDirectory
+    {
+        get { return defaultEventDirectory; }
     }
 }
 
@@ -478,7 +586,7 @@ public class MapEditorSubWindow : EditorWindow
     private string[,] map;
 //    private string[,] mapSave;
     private string[,] oldMap = null;
-    private bool mapSaveFlag;
+    private bool saveFlag;
     private bool prevFlag;
     private bool nextFlag;
     private bool playButtonFlag;
@@ -541,7 +649,7 @@ public class MapEditorSubWindow : EditorWindow
         // グリッドデータを生成
         gridRect = CreateGrid(mapSizeY, mapSizeX);
 
-        mapSaveFlag = false;
+        saveFlag = false;
         prevFlag = false;
         nextFlag = false;
         playButtonFlag = false;
@@ -567,9 +675,9 @@ public class MapEditorSubWindow : EditorWindow
         {
             PlaymodeStateObserver.OnPressedPlayButton += () =>
             {
-                if (!playButtonFlag && mapSaveFlag)
+                if (!playButtonFlag && saveFlag)
                 {
-                    mapSaveFlag = false;
+                    saveFlag = false;
                     if (!EditorUtility.DisplayDialog("MapEditor 警告", "再生すると変更が破棄されます。\n保存しますか？（保存しなかった場合変更は破棄されます。）", " はい ", " いいえ "))
                     {
                         playButtonFlag = true;
@@ -599,12 +707,14 @@ public class MapEditorSubWindow : EditorWindow
         int xx;
         string status = "";
 
+        string oldDir = dirLeft + ":" + dirRight + ":" + dirTop + ":" + dirBottom;
+
         if (gridRect == null)
         {
-/*            if (!playButtonFlag)
-                EditorUtility.DisplayDialog("MapEditor エラー", "MapEditorが正常に終了されなかった為、\n編集中のマップデータが初期化されました。", "OK");*/
+            /*            if (!playButtonFlag)
+                            EditorUtility.DisplayDialog("MapEditor エラー", "MapEditorが正常に終了されなかった為、\n編集中のマップデータが初期化されました。", "OK");*/
 
-            playButtonFlag = false;
+            /*playButtonFlag = false;
             filename = "新規マップ.txt";
             parent.Repaint();
 
@@ -618,7 +728,9 @@ public class MapEditorSubWindow : EditorWindow
                 }
             }
 
-            GridSizeUpdate();
+            GridSizeUpdate();*/
+            init();
+            parent.Repaint();
         }
 
         // グリッド線を描画する
@@ -680,13 +792,9 @@ public class MapEditorSubWindow : EditorWindow
         }
 
         if (e.type == EventType.KeyDown && (e.keyCode == KeyCode.LeftControl || e.keyCode == KeyCode.RightControl))
-        {
             ctrlFlag = true;
-        }
         else if (e.type == EventType.KeyUp)
-        {
             ctrlFlag = false;
-        }
 
         if (e.type == EventType.ScrollWheel)
         {
@@ -694,13 +802,9 @@ public class MapEditorSubWindow : EditorWindow
             if (pos.x > 0 && pos.x < Screen.width && pos.y > 0 && pos.y < 520 && ctrlFlag)
             {
                 if (e.delta[1] == 3)
-                {
                     parent.SetGridSize(parent.GridSize + 5);
-                }
                 else if (e.delta[1] == -3)
-                {
                     parent.SetGridSize(parent.GridSize - 5);
-                }
 
                 if (parent.GridSize > 100)
                     parent.SetGridSize(100);
@@ -746,9 +850,7 @@ public class MapEditorSubWindow : EditorWindow
                                 for (int xxx = 0; xxx < mapSizeX; xxx++)
                                 {
                                     if (map[yyy, xxx].IndexOf("start") > -1)
-                                    {
                                         map[yyy, xxx] = "";
-                                    }
                                 }
                             }
 
@@ -783,6 +885,17 @@ public class MapEditorSubWindow : EditorWindow
                                 }
                             }
                         }
+                        else if (path.IndexOf("event") > -1)
+                        {
+                            flag = true;
+                            string[] eves = map[mouseY, mouseX].Split('#');
+                            string set = "Assets/Editor/MapEditor/event_chip.png" + "|" + parent.EventCond + ":" + parent.EventID + ":" + parent.EventFlagID;
+
+                            if (map[mouseY, mouseX] != "" && !(eves[0].IndexOf("event") > -1))
+                                map[mouseY, mouseX] = eves[0] + "#" + set;
+                            else
+                                map[mouseY, mouseX] = set;
+                        }
                         else
                         {
                             if (map[mouseY, mouseX] != path)
@@ -797,9 +910,9 @@ public class MapEditorSubWindow : EditorWindow
                             if (e.type == EventType.mouseDown)
                             {
                                 oldMap = _oldmap;
-                                mapPrevSaveFlagList.Add(mapSaveFlag);
+                                mapPrevSaveFlagList.Add(saveFlag);
                                 mapNextSaveFlagList.Clear();
-                                mapSaveFlag = true;
+                                saveFlag = true;
                             }
                         }
                     }
@@ -813,6 +926,13 @@ public class MapEditorSubWindow : EditorWindow
                     {
                         if (map[mouseY, mouseX].IndexOf("start") > -1 || map[mouseY, mouseX].IndexOf("areachange") > -1)
                             parent.SetSelectedImagePath(map[mouseY, mouseX]);
+                        else if (map[mouseY, mouseX].IndexOf("event") > -1)
+                        {
+                            if (map[mouseY, mouseX].Split('#').Length > 1)
+                                parent.SetSelectedImagePath("Assets/Editor/MapEditor/event.png|" + map[mouseY, mouseX].Split('#')[1].Split('|')[1]);
+                            else
+                                parent.SetSelectedImagePath("Assets/Editor/MapEditor/event.png|" + stas[1]);
+                        }
                         else
                             parent.SetSelectedImagePath(stas[0]);
 
@@ -843,16 +963,32 @@ public class MapEditorSubWindow : EditorWindow
 
                 status = "移動先マップ : " + mapName + " / X : " + mapX + " / Y : " + mapY;
             }
+            else if (stas[0].IndexOf("event") > -1)
+            {
+                string[] maps = stas[1].Split(':');
+                string eventCond = maps[0] == "0" ? "自動発火" : maps[0] == "1" ? "触れた時" : maps[0] == "2" ? "フラグが建った時" : "";
+                int eventID = int.Parse(maps[1]);
+                int eventFlagID = int.Parse(maps[2]);
+                
+                status = "イベント発火条件 : " + eventCond + " / イベントID : " + eventID + (eventCond == "フラグが建った時" ? " / イベントフラグ : " + eventFlagID.ToString() : "");
+            }
             else if (!(stas[0].IndexOf("start") > -1))
             {
                 if (stas.Length > 1)
-                {
-                    status = stas[1];
-                }
+                    status = stas[0].Split('/')[stas[0].Split('/').Length - 1] + " / " + stas[1].Split('#')[0];
             }
             else
-            {
                 status = "プレイヤーのスタート地点";
+
+
+            if (map[mouseY, mouseX].Split('#').Length > 1)
+            {
+                string[] maps = map[mouseY, mouseX].Split('#')[1].Split('|')[1].Split(':');
+                string eventCond = maps[0] == "0" ? "自動発火" : maps[0] == "1" ? "触れた時" : maps[0] == "2" ? "フラグが建った時" : "";
+                int eventID = int.Parse(maps[1]);
+                int eventFlagID = int.Parse(maps[2]);
+
+                status = status + "\nイベント発火条件 : " + eventCond + " / イベントID : " + eventID + (eventCond == "フラグが建った時" ? " / イベントフラグ : " + eventFlagID.ToString() : "");
             }
         }
         else
@@ -871,15 +1007,27 @@ public class MapEditorSubWindow : EditorWindow
             {
                 if (map[yy, xx] != null && map[yy, xx].Length > 0)
                 {
-                    string sta = map[yy, xx];
-                    string[] stas = sta.Split('|');
+                    string[] eves = map[yy, xx].Split('#');
+                    string[] stas = eves[0].Split('|');
                     string path = map[yy, xx];
 
                     if (!(stas[0].IndexOf("start") > -1))
                         path = stas[0];
 
-                    Texture2D tex = (Texture2D)AssetDatabase.LoadAssetAtPath(path, typeof(Texture2D));
+                    Texture2D tex;
+
+                    if (path.IndexOf("none") > -1 || path.IndexOf("eraser") > -1 || path.IndexOf("areachange") > -1 || path.IndexOf("start") > -1 || path.IndexOf("event") > -1)
+                        tex = (Texture2D)AssetDatabase.LoadAssetAtPath(path, typeof(Texture2D));
+                    else
+                        tex = (Texture2D)AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath((AssetDatabase.LoadAssetAtPath(path, typeof(GameObject)) as GameObject).GetComponent<SpriteRenderer>().sprite), typeof(Texture2D));
+
                     GUI.DrawTexture(gridRect[yy, xx], tex);
+
+                    if (eves.Length > 1)
+                    {
+                        tex = (Texture2D)AssetDatabase.LoadAssetAtPath(eves[1].Split('|')[0], typeof(Texture2D));
+                        GUI.DrawTexture(gridRect[yy, xx], tex);
+                    }
                 }
             }
         }
@@ -924,8 +1072,8 @@ public class MapEditorSubWindow : EditorWindow
             map = (string[,]) mapPrevList[mapPrevList.Count -1].Clone();
             mapPrevList.RemoveAt(mapPrevList.Count -1);
 
-            mapNextSaveFlagList.Add(mapSaveFlag);
-            mapSaveFlag = mapPrevSaveFlagList[mapPrevSaveFlagList.Count - 1];
+            mapNextSaveFlagList.Add(saveFlag);
+            saveFlag = mapPrevSaveFlagList[mapPrevSaveFlagList.Count - 1];
             mapPrevSaveFlagList.RemoveAt(mapPrevSaveFlagList.Count - 1);
         }
         if (!prevFlag)
@@ -939,8 +1087,8 @@ public class MapEditorSubWindow : EditorWindow
             map = (string[,]) mapNextList[mapNextList.Count -1].Clone();
             mapNextList.RemoveAt(mapNextList.Count -1);
 
-            mapPrevSaveFlagList.Add(mapSaveFlag);
-            mapSaveFlag = mapNextSaveFlagList[mapNextSaveFlagList.Count - 1];
+            mapPrevSaveFlagList.Add(saveFlag);
+            saveFlag = mapNextSaveFlagList[mapNextSaveFlagList.Count - 1];
             mapNextSaveFlagList.RemoveAt(mapNextSaveFlagList.Count - 1);
         }
         if (!nextFlag)
@@ -951,6 +1099,7 @@ public class MapEditorSubWindow : EditorWindow
         GUILayout.Label("ファイル名 : " + filename);
 
         EditorGUILayout.BeginHorizontal();
+
         if (GUILayout.Button("保存", GUILayout.MinHeight(50)))
         {
             OutputFile();
@@ -960,6 +1109,10 @@ public class MapEditorSubWindow : EditorWindow
         {
             OpenFile();
         }
+
+        if (oldDir != dirLeft + ":" + dirRight + ":" + dirTop + ":" + dirBottom)
+            saveFlag = true;
+
         EditorGUILayout.EndHorizontal();
         Repaint();
     }
@@ -1060,9 +1213,9 @@ public class MapEditorSubWindow : EditorWindow
         if (path == "" || path == null)
             return;
 
-        if (System.IO.File.Exists(path))
+        if (File.Exists(path))
         {
-            System.IO.FileStream st = new System.IO.FileStream(path, FileMode.Open);
+            FileStream st = new FileStream(path, FileMode.Open);
             st.SetLength(0);
             st.Close();
         }
@@ -1089,7 +1242,9 @@ public class MapEditorSubWindow : EditorWindow
         sw.Flush();
         sw.Close();
 
-        mapSaveFlag = false;
+        File.Delete(path + ".meta");
+
+        saveFlag = false;
 //        mapSave = (string[,])map.Clone();
 
         // 完了ポップアップ
@@ -1171,10 +1326,18 @@ public class MapEditorSubWindow : EditorWindow
                         map[i, j] = "Assets/Editor/MapEditor/" + text.Split('!')[i].Split(',')[j] + ".png";
                     else if (text.Split('!')[i].Split(',')[j].IndexOf("areachange") > -1)
                         map[i, j] = "Assets/Editor/MapEditor/" + text.Split('!')[i].Split(',')[j].Split('|')[0] + ".png|" + text.Split('!')[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text.Split('!')[i].Split(',')[j].Split('|')[1].Split(':')[1] + ":" + text.Split('!')[i].Split(',')[j].Split('|')[1].Split(':')[2];
-                    else if (text.Split('!')[i].Split(',')[j] != "")
-                        map[i, j] = "Assets/Resources/Textures/" + text.Split('!')[i].Split(',')[j].Split('|')[0] + ".png|" + text.Split('!')[i].Split(',')[j].Split('|')[1];
+                    else if (text.Split('!')[i].Split(',')[j].IndexOf("MapChip") > -1)
+                        map[i, j] = "Assets/Resources/Prefabs/MapChip/" + text.Split('!')[i].Split(',')[j].Split('|')[0] + ".prefab|" + text.Split('!')[i].Split(',')[j].Split('|')[1];
+                    else if (text.Split('!')[i].Split(',')[j].IndexOf("MapObject") > -1)
+                        map[i, j] = "Assets/Resources/Prefabs/MapObject/" + text.Split('!')[i].Split(',')[j].Split('|')[0] + ".prefab|" + text.Split('!')[i].Split(',')[j].Split('|')[1];
                     else
                         map[i, j] = "";
+
+                    if (text.Split('!')[i].Split(',')[j].Split('#').Length > 1)
+                    {
+                        if (text.Split('!')[i].Split(',')[j].IndexOf("event") > -1)
+                            map[i, j] = map[i, j].Split('#')[0] + "#Assets/Editor/MapEditor/event_chip.png|" + text.Split('!')[i].Split(',')[j].Split('#')[1].Split('|')[1];
+                    }
                 }
             }
 
@@ -1209,15 +1372,24 @@ public class MapEditorSubWindow : EditorWindow
         {
             string[] tmps = data.Split('/');
             string fileName = tmps[tmps.Length - 1];
-            return fileName.Replace(".png", "");
+
+            if (data.Split('#').Length > 1)
+            {
+                string[] eves = data.Split('#');
+                tmps = eves[0].Split('/');
+                string[] tmps2 = eves[1].Split('/');
+                fileName = tmps[tmps.Length - 1] + "#" + tmps2[tmps2.Length - 1];
+            }
+
+            return fileName.Replace(".png", "").Replace(".prefab", "");
         }
         else
             return "";
     }
 
-    public bool MapSaveFlag
+    public bool SaveFlag
     {
-        get { return mapSaveFlag; }
+        get { return saveFlag; }
     }
 }
 
@@ -1225,13 +1397,15 @@ public class MapEditorBackGroundWindow: EditorWindow
 {
     private const float WINDOW_W = 750.0f;
     private const float WINDOW_H = 550.0f;
+    private const float LABEL_W = 100;
+    private const float RIGHT_W = 300;
     private float gridSize = 0.0f;
     private int mapSizeX = 0;
     private int mapSizeY = 0;
     private int objectSize;
     private int mode;
     private bool ctrlFlag;
-//    private bool saveFlag;
+    private bool saveFlag;
     private bool loopModeX;
     private bool loopModeY;
     private string fileName;
@@ -1273,12 +1447,13 @@ public class MapEditorBackGroundWindow: EditorWindow
         mode = 0;
         loopModeX = false;
         loopModeY = false;
+        saveFlag = false;
         background = null;
         backcolor = new Color(119f / 255f, 211f / 255f, 255f / 255f);
         foldout = new FoldOut[objectSize];
         foldout[0] = new FoldOut();
         foldout[0].foldout = true;
-        fileName = "新規マップ.txt";
+        fileName = "新規背景.txt";
     }
 
     public void GridSizeUpdate()
@@ -1303,7 +1478,7 @@ public class MapEditorBackGroundWindow: EditorWindow
             GridSizeUpdate();
         }
 
-        float backSizeX = Screen.width - 300;
+        float backSizeX = Screen.width - RIGHT_W;
         float backSizeY = 525;
 
         if (800 < gridSize * mapSizeX)
@@ -1455,7 +1630,7 @@ public class MapEditorBackGroundWindow: EditorWindow
         GUI.EndScrollView();
         EditorGUILayout.EndVertical();
 
-        EditorGUILayout.BeginVertical(GUILayout.Width(300));
+        EditorGUILayout.BeginVertical(GUILayout.Width(RIGHT_W));
         ScrollPos2 = EditorGUILayout.BeginScrollView(ScrollPos2);
         EditorGUILayout.Space();
 
@@ -1475,7 +1650,7 @@ public class MapEditorBackGroundWindow: EditorWindow
         EditorGUILayout.Space();
 
         EditorGUILayout.BeginHorizontal();
-        GUILayout.Label("ループモード : ", GUILayout.Width(100));
+        GUILayout.Label("ループモード : ", GUILayout.Width(LABEL_W));
         GUILayout.Label("X座標");
         loopModeX = EditorGUILayout.Toggle(loopModeX);
         GUILayout.Label("Y座標");
@@ -1486,15 +1661,15 @@ public class MapEditorBackGroundWindow: EditorWindow
         if (mode == 1)
         {
             EditorGUILayout.BeginHorizontal();
-            GUILayout.Label("オブジェクト数 : ", GUILayout.Width(100));
+            GUILayout.Label("オブジェクト数 : ", GUILayout.Width(LABEL_W));
             objectSize = EditorGUILayout.IntField(objectSize);
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space();
 
             if (objectSize != oldObjectSize)
             {
-                if (objectSize >= 10)
-                    objectSize = 10;
+                if (objectSize >= 100)
+                    objectSize = 100;
 
                 FoldOut[] oldFold = foldout;
                 foldout = new FoldOut[objectSize];
@@ -1531,7 +1706,7 @@ public class MapEditorBackGroundWindow: EditorWindow
                             EditorGUILayout.Space();
 
                             EditorGUILayout.BeginHorizontal();
-                            GUILayout.Label("ループモード : ", GUILayout.Width(100));
+                            GUILayout.Label("ループモード : ", GUILayout.Width(LABEL_W));
                             GUILayout.Label("X座標");
                             foldout[i].objectIsX = EditorGUILayout.Toggle(foldout[i].objectIsX);
                             GUILayout.Label("Y座標");
@@ -1540,19 +1715,19 @@ public class MapEditorBackGroundWindow: EditorWindow
                             EditorGUILayout.Space();
 
                             EditorGUILayout.BeginHorizontal();
-                            GUILayout.Label("X座標 : ", GUILayout.Width(100));
+                            GUILayout.Label("X座標 : ", GUILayout.Width(LABEL_W));
                             foldout[i].objectX = EditorGUILayout.FloatField(foldout[i].objectX);
                             EditorGUILayout.EndHorizontal();
                             EditorGUILayout.Space();
 
                             EditorGUILayout.BeginHorizontal();
-                            GUILayout.Label("Y座標 : ", GUILayout.Width(100));
+                            GUILayout.Label("Y座標 : ", GUILayout.Width(LABEL_W));
                             foldout[i].objectY = EditorGUILayout.FloatField(foldout[i].objectY);
                             EditorGUILayout.EndHorizontal();
                             EditorGUILayout.Space();
 
                             EditorGUILayout.BeginHorizontal();
-                            GUILayout.Label("ループの間隔 : ", GUILayout.Width(100));
+                            GUILayout.Label("ループの間隔 : ", GUILayout.Width(LABEL_W));
                             GUILayout.Label("X座標");
                             foldout[i].objectLoopX = EditorGUILayout.FloatField(foldout[i].objectLoopX);
                             GUILayout.Label("Y座標");
@@ -1594,9 +1769,9 @@ public class MapEditorBackGroundWindow: EditorWindow
         if (path == "" || path == null)
             return;
 
-        if (System.IO.File.Exists(path))
+        if (File.Exists(path))
         {
-            System.IO.FileStream st = new System.IO.FileStream(path, FileMode.Open);
+            FileStream st = new FileStream(path, FileMode.Open);
             st.SetLength(0);
             st.Close();
         }
@@ -1623,7 +1798,9 @@ public class MapEditorBackGroundWindow: EditorWindow
         sw.Flush();
         sw.Close();
 
-//        saveFlag = false;
+        File.Delete(path + ".meta");
+
+        saveFlag = false;
 
         // 完了ポップアップ
         EditorUtility.DisplayDialog("MapEditor", "保存が完了しました。\n" + path, "OK");
@@ -1709,5 +1886,424 @@ public class MapEditorBackGroundWindow: EditorWindow
         Handles.DrawLine(
             new Vector2(r.position.x + r.size.x, r.position.y),
             new Vector2(r.position.x + r.size.x, r.position.y + r.size.y));
+    }
+
+    public bool SaveFlag
+    {
+        get { return saveFlag; }
+    }
+}
+
+public class MapEditorEventWindow : EditorWindow
+{
+    private const float WINDOW_W = 750;
+    private const float WINDOW_H = 550;
+    private const float LABEL_W = 100;
+    private const float RIGHT_W = 300;
+    private bool saveFlag;
+    private int eventSize;
+    private string fileName;
+    private MapEditor parent;
+    private Vector2 ScrollPos = Vector2.zero;
+    private Vector2 ScrollPos2 = Vector2.zero;
+    private Vector2 ScrollPos3 = Vector2.zero;
+    private EventFold[] events;
+    private int selectID;
+    private EventCommandWindow subWindow;
+
+    public static MapEditorEventWindow WillAppear(MapEditor _parent)
+    {
+        MapEditorEventWindow window = (MapEditorEventWindow)GetWindow(typeof(MapEditorEventWindow), false);
+        window.Show();
+        window.minSize = new Vector2(WINDOW_W, WINDOW_H);
+        window.SetParent(_parent);
+        window.init();
+        return window;
+    }
+
+    public void init()
+    {
+        fileName = "新規イベント.txt";
+        saveFlag = false;
+        eventSize = 10;
+        events = new EventFold[eventSize];
+
+        for (int i = 0; i < eventSize; i++)
+        {
+            events[i] = new EventFold();
+        }
+        events[0].select = true;
+    }
+
+    void OnGUI()
+    {
+        int oldEventSize = eventSize;
+
+        Event e = Event.current;
+
+        EditorGUILayout.BeginHorizontal();
+
+        EditorGUILayout.BeginVertical(GUILayout.Width(Screen.width - RIGHT_W - 20));
+        ScrollPos = EditorGUILayout.BeginScrollView(ScrollPos);
+        EditorGUILayout.Space();
+
+        if (GUILayout.Button("コマンドウィンドウを表示", GUILayout.Height(30)))
+        {
+            subWindow = EventCommandWindow.WillAppear(this);
+        }
+
+        EditorGUILayout.BeginVertical(GUI.skin.textArea, GUILayout.Width(Screen.width - RIGHT_W - 30), GUILayout.Height(450));
+
+        if (events != null)
+        {
+            for (int i = 0; i < eventSize; i++)
+            {
+                if (events[i] != null)
+                {
+                    if (events[i].select)
+                    {
+                        if (events[i].command.Count > 0)
+                        {
+//                            events[i].select_command = GUILayout.SelectionGrid(events[i].select_command, events[i].command.ToArray(), 1, "PreferencesKeysElement", GUILayout.Width(Screen.width - RIGHT_W - 40));
+                            for (int j = 0; j < events[i].command.Count; j++)
+                            {
+                                GUIStyleState styleState = new GUIStyleState();
+                                GUIStyle style = new GUIStyle(GUI.skin.label);
+                                Color[] c = new Color[9];
+                                for (int m = 0; m < 9; ++m)
+                                {
+                                    c[m].a = 1.0f;
+                                    c[m].r = 0.24f;
+                                    c[m].g = 0.5f;
+                                    c[m].b = 1.0f;
+                                }
+                                Texture2D tex = new Texture2D(3, 3, TextureFormat.ARGB32, false);
+                                tex.SetPixels(c);
+                                styleState.background = tex;
+                                styleState.textColor = Color.white;
+                                style.normal = styleState;
+                                if (GUILayout.Button(events[i].command[j], events[i].select_command == j ? style : GUI.skin.label, GUILayout.Width(Screen.width - RIGHT_W - 40)))
+                                {
+                                    if (events[i].select_command == j)
+                                    {
+                                        subWindow = EventCommandWindow.WillAppear(this);
+                                        subWindow.initMessage(events[i].select_command, events[i].command[j]);
+                                    }
+                                    else
+                                        events[i].select_command = j;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Rect workArea = GUILayoutUtility.GetRect(10, 10000, 10, 450);
+                            ScrollPos3 = GUI.BeginScrollView(workArea, ScrollPos3, new Rect(0, 0, Screen.width - RIGHT_W - 40, eventSize * 15), false, false);
+                            GUI.EndScrollView();
+                        }
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        EditorGUILayout.EndVertical();
+        GUILayout.Label("ファイル名 : " + fileName);
+        EditorGUILayout.BeginHorizontal(GUILayout.Width(Screen.width - RIGHT_W - 30));
+
+        if (GUILayout.Button("保存", GUILayout.Height(30)))
+        {
+            OutputFile();
+        }
+
+        if (GUILayout.Button("開く", GUILayout.Height(30)))
+        {
+            OpenFile();
+        }
+
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.EndScrollView();
+        EditorGUILayout.EndVertical();
+
+        EditorGUILayout.BeginVertical(GUILayout.Width(RIGHT_W));
+        ScrollPos2 = EditorGUILayout.BeginScrollView(ScrollPos2);
+        EditorGUILayout.Space();
+
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.Label("イベント数 : ", GUILayout.Width(LABEL_W));
+        eventSize = EditorGUILayout.IntField(eventSize);
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.Space();
+
+        if (eventSize != oldEventSize)
+        {
+            if (eventSize >= 100)
+                eventSize = 100;
+
+            EventFold[] oldFold = events;
+            events = new EventFold[eventSize];
+
+            for (int i = 0; i < eventSize; i++)
+            {
+                if (oldFold != null)
+                {
+                    if (i < oldFold.Length)
+                    {
+                        if (oldFold[i] != null)
+                        {
+                            events[i] = oldFold[i];
+                            continue;
+                        }
+                    }
+                }
+
+                events[i] = new EventFold();
+            }
+        }
+
+        if (events != null)
+        {
+            for (int i = 0; i < eventSize; i++)
+            {
+                if (events[i] != null)
+                {
+                    if (GUILayout.Button("Event" + i, events[i].select ? GUI.skin.box : GUI.skin.label))
+                    {
+                        for (int j = 0; j < eventSize; j++)
+                            events[j].select = false;
+
+                        events[i].select = true;
+                        selectID = i;
+                        GUI.FocusControl("");
+                    }
+                    //events[i].select = EditorGUILayout.Toggle("Event" + i, events[i].select);
+                }
+            }
+        }
+
+        if (e.keyCode == KeyCode.Delete && e.type == EventType.KeyDown)
+        {
+            if (events[selectID].command.Count > 0)
+            {
+                events[selectID].command.RemoveAt(events[selectID].select_command);
+                Repaint();
+            }
+        }
+
+        EditorGUILayout.Space();
+        EditorGUILayout.EndScrollView();
+        EditorGUILayout.EndVertical();
+    }
+
+    // ファイルで出力
+    private void OutputFile()
+    {
+        string path = EditorUtility.SaveFilePanel("select file", parent.DefaultEventDirectory, fileName, "txt");
+
+        if (path == "" || path == null)
+            return;
+
+        if (File.Exists(path))
+        {
+            FileStream st = new FileStream(path, FileMode.Open);
+            st.SetLength(0);
+            st.Close();
+        }
+
+        fileName = path.Split('/')[path.Split('/').Length - 1];
+
+        MapEventData data = new MapEventData();
+        data.eventSize = eventSize;
+        data.eventFold = new EventFold[eventSize];
+
+        for (int i = 0; i < eventSize; i++)
+        {
+            data.eventFold[i] = events[i];
+        }
+
+        FileInfo fileInfo = new FileInfo(path);
+        StreamWriter sw = fileInfo.AppendText();
+        sw.WriteLine(JsonUtility.ToJson(data));
+        sw.Flush();
+        sw.Close();
+
+        File.Delete(path + ".meta");
+
+        saveFlag = false;
+
+        // 完了ポップアップ
+        EditorUtility.DisplayDialog("MapEditor", "保存が完了しました。\n" + path, "OK");
+    }
+
+    // ファイルを開く
+    private void OpenFile()
+    {
+        string path = EditorUtility.OpenFilePanel("select file", parent.DefaultEventDirectory, "txt");
+
+        if (!string.IsNullOrEmpty(path))
+        {
+            fileName = path.Split('/')[path.Split('/').Length - 1];
+
+            StreamReader sr = new StreamReader(path, System.Text.Encoding.UTF8);
+            MapEventData data = JsonUtility.FromJson<MapEventData>(sr.ReadToEnd());
+
+            eventSize = data.eventSize;
+            events = new EventFold[eventSize];
+
+            for (int i = 0; i < eventSize; i++)
+            {
+                events[i] = data.eventFold[i];
+            }
+
+            Repaint();
+        }
+    }
+
+    private void SetParent(MapEditor _parent)
+    {
+        parent = _parent;
+    }
+
+    public bool SaveFlag
+    {
+        get { return saveFlag; }
+    }
+
+    public int getID
+    {
+        get { return selectID; }
+    }
+
+    public void SetCommand(int id, int num, string command)
+    {
+        events[id].command.RemoveAt(num);
+        events[id].command.Insert(num, command);
+    }
+
+    public void AddCommand(int id, string command)
+    {
+        events[id].command.Add(command);
+    }
+}
+
+public class EventCommandWindow : EditorWindow
+{
+    private const float WINDOW_W = 550;
+    private const float WINDOW_H = 350;
+    private const float LABEL_W = 100;
+    private CommandList[] commandList;
+    private int commandListSize;
+    private int selectCommandList;
+    private int mode;
+    private int selectID;
+    private string messageWindow_text;
+    private MapEditorEventWindow parent;
+    private Vector2 ScrollPos = Vector2.zero;
+    private Vector2 ScrollPos2 = Vector2.zero;
+
+    private class CommandList
+    {
+        public string name = "";
+        public bool select = false;
+    }
+
+    public static EventCommandWindow WillAppear(MapEditorEventWindow _parent)
+    {
+        EventCommandWindow window = (EventCommandWindow)GetWindow(typeof(EventCommandWindow), false);
+        window.Show();
+        window.minSize = new Vector2(WINDOW_W, WINDOW_H);
+        window.SetParent(_parent);
+        window.init();
+        return window;
+    }
+
+    public void init()
+    {
+        commandListSize = 3;
+        commandList = new CommandList[commandListSize];
+        string[] commandListNames = new string[] { "メッセージウィンドウ", "画像", "その他" };
+
+        for (int i = 0; i < commandListSize; i++)
+        {
+            commandList[i] = new CommandList();
+            commandList[i].name = commandListNames[i];
+        }
+
+        commandList[0].select = true;
+        mode = 0;
+    }
+
+    public void initMessage(int id, string text)
+    {
+        selectID = id;
+        mode = 1;
+        Regex reg = new Regex(@"\[(?<value>.*?)\]");
+        messageWindow_text = text.Replace("\\n", "\n").Replace("[" + reg.Match(text).Groups["value"].Value + "]", "");
+        Repaint();
+    }
+
+    void OnGUI()
+    {
+        string btName = mode == 0 ? "追加" : "編集";
+
+        ScrollPos = EditorGUILayout.BeginScrollView(ScrollPos);
+        EditorGUILayout.BeginVertical();
+        EditorGUILayout.BeginHorizontal();
+
+        if (commandList != null)
+        {
+            for (int i = 0; i < commandListSize; i++)
+            {
+                if (commandList[i] != null)
+                {
+                    if (GUILayout.Button(commandList[i].name, commandList[i].select ? GUI.skin.box : GUI.skin.label, GUILayout.Width(150)))
+                    {
+                        for (int j = 0; j < commandListSize; j++)
+                            commandList[j].select = false;
+
+                        commandList[i].select = true;
+                        GUI.FocusControl("");
+                        selectCommandList = i;
+                    }
+                }
+            }
+        }
+
+        EditorGUILayout.EndHorizontal();
+
+        if (selectCommandList == 0)
+        {
+            EditorGUILayout.BeginVertical();
+            EditorGUILayout.Space();
+            messageWindow_text = EditorGUILayout.TextArea(messageWindow_text, GUILayout.Height(250));
+            EditorGUILayout.EndVertical();
+        }
+
+        EditorGUILayout.BeginHorizontal();
+
+        if (GUILayout.Button(btName, GUILayout.Height(30)))
+        {
+            if (messageWindow_text != null && messageWindow_text != "")
+            {
+                if (mode == 0)
+                    parent.AddCommand(parent.getID, "[Message]" + messageWindow_text.Replace("\n", "\\n"));
+                else
+                    parent.SetCommand(parent.getID, selectID, "[Message]" + messageWindow_text.Replace("\n", "\\n"));
+
+                parent.Repaint();
+                Close();
+            }
+        }
+
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.EndVertical();
+        EditorGUILayout.EndScrollView();
+    }
+
+    public void SetParent(MapEditorEventWindow _parent)
+    {
+        parent = _parent;
     }
 }

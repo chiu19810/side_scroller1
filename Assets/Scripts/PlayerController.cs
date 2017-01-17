@@ -20,6 +20,8 @@ public class PlayerController : MonoBehaviour
     private const float m_centerX = 0.48f;
     private const float horiCount = 20;
 
+    private Wait wait = new Wait();
+
     public LayerMask groundLayer = -1;
     public float speed = -1;
     public float Sjump = -1;
@@ -27,7 +29,7 @@ public class PlayerController : MonoBehaviour
     public float playerW = -1;
     public float playerH = -1;
 
-	void Start ()
+	void Start()
     {
         if (speed == -1)
             Debug.Log("speedが設定されていません！");
@@ -58,7 +60,7 @@ public class PlayerController : MonoBehaviour
         idolFrame = 0;
 	}
 	
-	void Update ()
+	void Update()
     {
         Jump();
         Move();
@@ -192,7 +194,7 @@ public class PlayerController : MonoBehaviour
             acon.SetBool("Right", false);
             horiFrame++;
 
-            if (x - playerW / 2 <= 0)
+            if (x <= 0)
             {
                 h = 0;
             }
@@ -205,7 +207,7 @@ public class PlayerController : MonoBehaviour
             acon.SetBool("Right", true);
             horiFrame++;
 
-            if (x + playerW / 2 >= stageSizeW)
+            if (x + stage.chipSizeX >= stageSizeW)
             {
                 h = 0;
             }
@@ -259,7 +261,7 @@ public class PlayerController : MonoBehaviour
             rb.velocity = Vector2.zero;
 
             if (stas[1] != "-1" && stas[2] != "-1")
-                stage.GetPlayer.transform.position = new Vector2(chipX * int.Parse(stas[1]) + m_centerX / 2, chipY * int.Parse(stas[2]) + m_centerY / 2);
+                stage.GetPlayer.transform.position = new Vector2(chipX * int.Parse(stas[1]), chipY * int.Parse(stas[2]));
         }
     }
 
