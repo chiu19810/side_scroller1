@@ -23,7 +23,7 @@ GameObject:
   - 114: {fileID: 114000010156960302}
   m_Layer: 0
   m_Name: EventPrefab
-  m_TagString: Untagged
+  m_TagString: Event
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -54,7 +54,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_Offset: {x: 0, y: 0}
   serializedVersion: 2
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 0.64, y: 0.64}
 --- !u!114 &114000010156960302
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -66,3 +66,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82194fb1d24df6849a3cd89cd26a6eee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playerLayer:
+    serializedVersion: 2
+    m_Bits: 512
+  eventData:
+    name: 
+    x: 0
+    y: 0
+    rect:
+      serializedVersion: 2
+      x: 0
+      y: 0
+      width: 0
+      height: 0
+    mode: 0
+    _event:
+      select: 0
+      command: []
+      select_command: 0
+  mode: 0

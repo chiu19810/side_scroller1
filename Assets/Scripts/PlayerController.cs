@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
@@ -10,6 +9,7 @@ public class PlayerController : MonoBehaviour
     private bool isGround;
     private bool horiJumpFlag;
     private bool jumpMoveFlag;
+    private bool isMoveFlag;
     private int startCount;
     private float jumpButtonFrame;
     private float jumpFrame;
@@ -19,31 +19,22 @@ public class PlayerController : MonoBehaviour
     private const float m_centerY = 0.32f;
     private const float m_centerX = 0.48f;
     private const float horiCount = 20;
+    private const int startConstCount = 20;
 
-    private Wait wait = new Wait();
+    public LayerMask groundLayer;
+    public float speed;     // 5
+    public float Sjump;     // 130
+    public float Bjump;     // 220
+    public float playerW;   // 0.64
+    public float playerH;   // 0.64
 
-    public LayerMask groundLayer = -1;
-    public float speed = -1;
-    public float Sjump = -1;
-    public float Bjump = -1;
-    public float playerW = -1;
-    public float playerH = -1;
-
-	void Start()
+    void Start()
     {
-        if (speed == -1)
-            Debug.Log("speedが設定されていません！");
-        if (Sjump == -1)
-            Debug.Log("Sjumpが設定されていません！");
-        if (Bjump == -1)
-            Debug.Log("Bjumpが設定されていません！");
-        if (groundLayer == -1)
-            Debug.Log("groundLayerが設定されていません！");
-        if (playerW == -1)
-            Debug.Log("playerWが設定されていません！");
-        if (playerH == -1)
-            Debug.Log("playerHが設定されていません！");
+        init();
+    }
 
+    private void init()
+    {
         acon = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
         boxCollider2D = GetComponent<BoxCollider2D>();
@@ -52,18 +43,27 @@ public class PlayerController : MonoBehaviour
         isGround = false;
         horiJumpFlag = false;
         jumpMoveFlag = false;
-        startCount = 20;
+        isMoveFlag = true;
+        startCount = startConstCount;
 
         jumpButtonFrame = 0;
         jumpFrame = 0;
         moveSpeedChange = 0;
         idolFrame = 0;
-	}
-	
-	void Update()
+    }
+
+    void Update()
     {
-        Jump();
-        Move();
+        if (isMoveFlag)
+        {
+            Time.timeScale = 1;
+            Jump();
+            Move();
+        }
+        else
+        {
+            Time.timeScale = 0;
+        }
     }
 
     void FixedUpdate()
@@ -88,8 +88,6 @@ public class PlayerController : MonoBehaviour
 
     private void Jump()
     {
-        float h = Input.GetAxis("Horizontal");
-
         bool isJumpDown = Input.GetButtonDown("Jump");
         bool isJump = Input.GetButton("Jump");
         bool isJumpUp = Input.GetButtonUp("Jump");
@@ -153,7 +151,7 @@ public class PlayerController : MonoBehaviour
 
         if (stage.getMap == null)
             return;
-        
+
         if (startCount > 0)
         {
             startCount--;
@@ -176,15 +174,10 @@ public class PlayerController : MonoBehaviour
         }
 
         string[,] map = stage.getMap;
-        int mapX = map.GetLength(1);
-        int mapY = map.GetLength(0);
+        int mapX = stage.Data.map.mapSizeX;
         GameObject player = gameObject;
-        float playerW = boxCollider2D.size.x;
-        float playerH = boxCollider2D.size.y;
         float x = player.transform.position.x;
-        float y = player.transform.position.y;
         float stageSizeW = stage.chipSizeX * mapX;
-        float stageSizeH = stage.chipSizeY * mapY;
 
         if (h < 0)
         {
@@ -248,23 +241,6 @@ public class PlayerController : MonoBehaviour
         rb.velocity = new Vector2(h * (speed - moveSpeedChange), rb.velocity.y);
     }
 
-    void OnTriggerStay2D(Collider2D collider)
-    {
-        if (collider.gameObject.tag == "AreaChange")
-        {
-            string[] stas = collider.gameObject.name.Split(':');
-            float chipX = stage.chipSizeX;
-            float chipY = stage.chipSizeY;
-
-            startCount = 20;
-            stage.StageInit(stas[0]);
-            rb.velocity = Vector2.zero;
-
-            if (stas[1] != "-1" && stas[2] != "-1")
-                stage.GetPlayer.transform.position = new Vector2(chipX * int.Parse(stas[1]), chipY * int.Parse(stas[2]));
-        }
-    }
-
     public float getPlayerW
     {
         get { return playerW; }
@@ -273,5 +249,16 @@ public class PlayerController : MonoBehaviour
     public float getPlayerH
     {
         get { return playerH; }
+    }
+
+    public bool PlayerMoveFlag
+    {
+        get { return isMoveFlag; }
+        set { isMoveFlag = value; }
+    }
+
+    public void SetStart()
+    {
+        startCount = startConstCount;
     }
 }

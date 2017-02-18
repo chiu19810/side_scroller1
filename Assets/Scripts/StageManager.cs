@@ -1,46 +1,78 @@
 ﻿using UnityEngine;
-using System.Collections;
-using System.IO;
 using System.Collections.Generic;
 
 public class StageManager : MonoBehaviour
 {
-    public Camera cameraObject;
-    public string startMap = "";
-
-    public float chipSizeX = -1;
-    public float chipSizeY = -1;
-
-    private GameObject PlayerInstance;
-    private GameObject player;
-    private GameObject stage;
     private float playerX;
     private float playerY;
-    private bool dirLeft;
-    private bool dirRight;
-    private bool dirTop;
-    private bool dirBottom;
-    private string stagePath = "Map/Stages/";
-    private string bgPath = "Map/Backgrounds/";
-    private string eventPath = "Map/Events/";
-    private string soundPath = "Sounds/BGM/";
     private string[,] map;
+    private string stagePath = "Map/Stages/";
+    private string soundPath = "Sounds/BGM/";
     private string nowStageName;
     private Vector2 startPos = Vector2.zero;
-    private AudioSource audioSource;
+    private GameObject PlayerInstance;
+    private GameObject stages;
+    private MapSaveData data = new MapSaveData();
+    private VariableManager var = new VariableManager();
 
-    void Start ()
+    private List<string> flgVarNames = new List<string>();
+    private List<string> intVarNames = new List<string>();
+    private List<string> strVarNames = new List<string>();
+
+    // ローカル変数
+    private FlgVarData[] flgVar = new FlgVarData[10];
+    private IntVarData[] intVar = new IntVarData[10];
+    private StrVarData[] strVar = new StrVarData[10];
+
+    public Camera cameraObject;
+    public string startMap;
+    public float chipSizeX; // 0.64
+    public float chipSizeY; // 0.64
+
+    void Start()
     {
-        if (startMap == "")
-            Debug.Log("startMapが設定されていません！");
-        if (chipSizeX == -1)
-            Debug.Log("chipSizeXが設定されていません！");
-        if (chipSizeY == -1)
-            Debug.Log("chipSizeYが設定されていません！");
-
         GameObject prefab = (GameObject)Resources.Load("Prefabs/Player");
         PlayerInstance = Instantiate(prefab, new Vector3(-100, -100, 0), Quaternion.identity) as GameObject;
         StageInit(startMap);
+
+        for (int i = 0; i < 10; i++)
+        {
+            flgVar[i] = new FlgVarData();
+            intVar[i] = new IntVarData();
+            strVar[i] = new StrVarData();
+
+            flgVar[i].name = "" + i;
+            flgVar[i].var = false;
+
+            intVar[i].name = "" + i;
+            intVar[i].var = 0;
+
+            strVar[i].name = "" + i;
+            strVar[i].var = "";
+        }
+
+        VarLoad();
+        for (int i = 0; i < 10; i++)
+        {
+            flgVarNames.Add("ローカルフラグ変数 " + flgVar[i].name);
+            intVarNames.Add("ローカル整数変数 " + intVar[i].name);
+            strVarNames.Add("ローカル文字列変数 " + strVar[i].name);
+        }
+        // フラグ
+        for (int i = 0; i < var.var_flg.Count; i++)
+        {
+            flgVarNames.Add("システムフラグ変数 " + var.var_flg[i].name);
+        }
+        // 整数
+        for (int i = 0; i < var.var_int.Count; i++)
+        {
+            intVarNames.Add("システム整数変数 " + var.var_int[i].name);
+        }
+        // 文字列
+        for (int i = 0; i < var.var_str.Count; i++)
+        {
+            strVarNames.Add("システム文字列変数 " + var.var_str[i].name);
+        }
     }
 
     public void StageInit(string path)
@@ -50,34 +82,49 @@ public class StageManager : MonoBehaviour
         int numX = 1;
         int numY = 1;
 
-        if ((map = OpenMapFile(path)) == null)
+        if ((data = OpenMapFile(path)) == null)
             return;
 
         nowStageName = path;
 
+        MessageWindowManager mwm = GameObject.Find("SystemManager").GetComponent<MessageWindowManager>();
+        mwm.getText.text = "";
+        mwm.getMessageBox.SetActive(false);
+
+        map = new string[data.map.mapSizeY, data.map.mapSizeX];
+
+        int i = 0;
+        for (int yy = 0; yy < data.map.mapSizeY; yy++)
+        {
+            for (int xx = 0; xx < data.map.mapSizeX; xx++)
+            {
+                map[yy, xx] = data.map.map[i];
+                i++;
+            }
+        }
+
         // 背景ロード
-        MapBackgroundData data = OpenMbgFile(path);
-        cameraObject.backgroundColor = data.backcolor;
-        Texture2D tex = Resources.Load(data.background.Replace("Assets/Resources/", "").Split('.')[0]) as Texture2D;
+        cameraObject.backgroundColor = data.bg.backcolor;
+        Texture2D tex = Resources.Load(data.bg.background.Replace("Assets/Resources/", "").Split('.')[0]) as Texture2D;
 
-        Destroy(stage);
-        stage = new GameObject("Stage");
+        Destroy(stages);
+        stages = new GameObject("Stage");
 
-        GameObject background = new GameObject("Background");
-        background.transform.parent = stage.transform;
+        GameObject backgrounds = new GameObject("Background");
+        backgrounds.transform.parent = stages.transform;
 
         if (tex != null)
         {
-            if (data.loopXFlag && data.loopYFlag)
+            if (data.bg.loopXFlag && data.bg.loopYFlag)
             {
                 numX = (int)(chipSizeX * 100 * map.GetLength(1) / tex.width) + 1;
                 numY = (int)(chipSizeY * 100 * map.GetLength(0) / tex.height) + 1;
             }
-            else if (data.loopXFlag)
+            else if (data.bg.loopXFlag)
             {
                 numX = (int)(chipSizeX * 100 * map.GetLength(1) / tex.width) + 1;
             }
-            else if (data.loopYFlag)
+            else if (data.bg.loopYFlag)
             {
                 numY = (int)(chipSizeY * 100 * map.GetLength(0) / tex.height) + 1;
             }
@@ -92,7 +139,7 @@ public class StageManager : MonoBehaviour
                     GameObject ins = Instantiate(prefab, new Vector3(x, y, 0), Quaternion.identity) as GameObject;
                     ins.transform.GetComponent<SpriteRenderer>().sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), Vector2.zero);
                     ins.transform.GetComponent<SpriteRenderer>().sortingOrder = -100;
-                    ins.transform.parent = background.transform;
+                    ins.transform.parent = backgrounds.transform;
 
                     x += tex.width / 100;
                 }
@@ -100,54 +147,32 @@ public class StageManager : MonoBehaviour
             }
         }
 
-        // BGMロード
-        OpenBGMFile(path);
-
         // ステージロード
-        player = GameObject.Find("Player(Clone)");
         x = 0;
         y = 0;
 
-        for (int i = map.GetLength(0) - 1; i >= 0; i--)
+        for (i = data.map.mapSizeY - 1; i >= 0; i--)
         {
             x = 0;
-            for (int j = 0; j < map.GetLength(1); j++)
+            for (int j = 0; j < data.map.mapSizeX; j++)
             {
-                string[] eves = map[i, j].Split('#');
-                string[] stas = eves[0].Split('|');
+                string[] stas = map[i, j].Split('|');
                 string prePath = stas[0];
 
                 if (prePath != null && prePath != "")
                 {
-                    if (prePath.IndexOf("Player") > -1)
+                    if (prePath.IndexOf("start") > -1)
                     {
                         startPos = new Vector2(x, y);
                         PlayerInstance.transform.position = startPos;
                     }
                     else
                     {
-                        GameObject prefab = (GameObject)Resources.Load(prePath);
+                        GameObject prefab = (GameObject)Resources.Load(prePath.Split('.')[0].Replace("Assets/Resources/", ""));
                         if (prefab != null)
                         {
                             GameObject ins = Instantiate(prefab, new Vector3(x, y, 0), Quaternion.identity) as GameObject;
-                            ins.transform.parent = stage.transform;
-
-                            if (prePath.IndexOf("AreaChange") > -1)
-                                ins.name = stas[1];
-                        }
-
-                        if (eves.Length > 1)
-                        {
-                            int eventID = int.Parse(eves[1].Split('|')[1].Split(':')[1]);
-                            prefab = (GameObject)Resources.Load(eves[1].Split('|')[0]);
-                            if (prefab != null)
-                            {
-                                GameObject ins = Instantiate(prefab, new Vector3(x, y, 0), Quaternion.identity) as GameObject;
-                                ins.transform.parent = stage.transform;
-
-                                EventManager em = ins.GetComponent<EventManager>();
-                                em.eventID = eventID;
-                            }
+                            ins.transform.parent = stages.transform;
                         }
                     }
                 }
@@ -157,138 +182,37 @@ public class StageManager : MonoBehaviour
 
             y += chipSizeY;
         }
-    }
 
-    private string[,] OpenMapFile(string path)
-    {
-        path = stagePath + path;
+        // イベントロード
+        GameObject events = new GameObject("Event");
 
-        TextAsset ta = Resources.Load(path) as TextAsset;
-        if (ta == null)
-            return null;
-
-        dirLeft = false;
-        dirRight = false;
-        dirTop = false;
-        dirBottom = false;
-
-        if (ta.text.Split('?').Length > 1)
+        for (i = 0; i < data.ev.eventChip.Length; i++)
         {
-            string[] dir = ta.text.Split('?')[1].Split(':');
+            MapEventChip ev = data.ev.eventChip[i];
 
-            for (int i = 0; i < dir.Length; i++)
+            GameObject prefab = (GameObject)Resources.Load("Prefabs/EventPrefab");
+            if (prefab != null)
             {
-                if (dir[i].IndexOf("Left") > -1)
-                    dirLeft = true;
-                else if (dir[i].IndexOf("Right") > -1)
-                    dirRight = true;
-                else if (dir[i].IndexOf("Top") > -1)
-                    dirTop = true;
-                else if (dir[i].IndexOf("Bottom") > -1)
-                    dirBottom = true;
+                GameObject ins = Instantiate(prefab, new Vector3(ev.x * chipSizeX, data.map.mapSizeY * chipSizeY - ev.y * chipSizeY - chipSizeY, 0), Quaternion.identity) as GameObject;
+                ins.transform.parent = events.transform;
+                BoxCollider2D col = ins.transform.GetComponent<BoxCollider2D>();
+                col.offset = new Vector2(ev.rect.x * chipSizeX, -ev.rect.y * chipSizeY);
+                col.size = new Vector2(ev.rect.width * chipSizeX, ev.rect.height * chipSizeY);
+                EventManager em = ins.transform.GetComponent<EventManager>();
+                em.eventData = ev;
+                em.mode = ev.mode;
             }
         }
-
-        string[] text = ta.text.Split("\n"[0]);
-        int sizeY = 0;
-        int mapSizeX = -1;
-        int mapSizeY = -1;
-        mapSizeX = text[0].Split(',').Length;
-
-        for (int i = 0; i < text.Length; i++)
-        {
-            if (text[i].TrimEnd().Replace("\n", "").Replace("\r", "") != "") sizeY++;
-        }
-
-        player = GameObject.Find("Player(Clone)");
-        mapSizeY = sizeY;
-        string[,] map = new string[mapSizeY, mapSizeX];
-        for (int i = 0; i < mapSizeY; i++)
-        {
-            for (int j = 0; j < mapSizeX; j++)
-            {
-                if (text[i].Split(',')[j].IndexOf("start") > -1)
-                    map[i, j] = "Player";
-                else if (text[i].Split(',')[j].IndexOf("areachange") > -1)
-                    map[i, j] = "Prefabs/AreaChange|" + text[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text[i].Split(',')[j].Split('|')[1];
-                else if (text[i].Split(',')[j].Split('|')[0].IndexOf("event") > -1)
-                {
-                    if (text[i].Split(',')[j].Split('|')[1].Split(':')[3] == "0")
-                        map[i, j] = "Prefabs/EventPrefab|" + text[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text[i].Split(',')[j].Split('|')[1];
-                    else if (text[i].Split(',')[j].Split('|')[1].Split(':')[3] == "1")
-                        map[i, j] = "Prefabs/EventTopPrefab|" + text[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text[i].Split(',')[j].Split('|')[1];
-                    else if (text[i].Split(',')[j].Split('|')[1].Split(':')[3] == "2")
-                        map[i, j] = "Prefabs/EventBottomPrefab|" + text[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text[i].Split(',')[j].Split('|')[1];
-                    else if (text[i].Split(',')[j].Split('|')[1].Split(':')[3] == "3")
-                        map[i, j] = "Prefabs/EventLeftPrefab|" + text[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text[i].Split(',')[j].Split('|')[1];
-                    else if (text[i].Split(',')[j].Split('|')[1].Split(':')[3] == "4")
-                        map[i, j] = "Prefabs/EventRightPrefab|" + text[i].Split(',')[j].Split('|')[1].Split(':')[0] + ":" + text[i].Split(',')[j].Split('|')[1];
-                }
-                else if (text[i].Split(',')[j].IndexOf("MapChip") > -1)
-                    map[i, j] = "Prefabs/MapChip/" + text[i].Split(',')[j].Split('|')[0];
-                else if (text[i].Split(',')[j].IndexOf("MapObject") > -1)
-                    map[i, j] = "Prefabs/MapObject/" + text[i].Split(',')[j].Split('|')[0];
-                else
-                    map[i, j] = "";
-
-                if (text[i].Split(',')[j].Split('#').Length > 1)
-                {
-                    if (text[i].Split(',')[j].Split('#')[1].IndexOf("event") > -1)
-                    {
-                        if (text[i].Split(',')[j].Split('#')[1].Split('|')[1].Split(':')[3] == "0")
-                            map[i, j] = map[i, j].Split('#')[0] + "#Prefabs/EventPrefab|" + text[i].Split(',')[j].Split('#')[1].Split('|')[1];
-                        else if (text[i].Split(',')[j].Split('#')[1].Split('|')[1].Split(':')[3] == "1")
-                            map[i, j] = map[i, j].Split('#')[0] + "#Prefabs/EventTopPrefab|" + text[i].Split(',')[j].Split('#')[1].Split('|')[1];
-                        else if (text[i].Split(',')[j].Split('#')[1].Split('|')[1].Split(':')[3] == "2")
-                            map[i, j] = map[i, j].Split('#')[0] + "#Prefabs/EventBottomPrefab|" + text[i].Split(',')[j].Split('#')[1].Split('|')[1];
-                        else if (text[i].Split(',')[j].Split('#')[1].Split('|')[1].Split(':')[3] == "3")
-                            map[i, j] = map[i, j].Split('#')[0] + "#Prefabs/EventLeftPrefab|" + text[i].Split(',')[j].Split('#')[1].Split('|')[1];
-                        else if (text[i].Split(',')[j].Split('#')[1].Split('|')[1].Split(':')[3] == "4")
-                            map[i, j] = map[i, j].Split('#')[0] + "#Prefabs/EventRightPrefab|" + text[i].Split(',')[j].Split('#')[1].Split('|')[1];
-                    }
-                }
-            }
-        }
-
-        return map;
     }
 
-    private MapBackgroundData OpenMbgFile(string path)
+    private MapSaveData OpenMapFile(string path)
     {
-        path = bgPath + path;
-
-        TextAsset ta = Resources.Load(path) as TextAsset;
-        if (ta == null)
-            return new MapBackgroundData();
-
-        MapBackgroundData data = JsonUtility.FromJson<MapBackgroundData>(ta.text);
-        return data;
+        return JsonUtility.FromJson<MapSaveData>((Resources.Load(stagePath + path) as TextAsset).text);
     }
 
-    public MapEventData OpenEventFile(string path)
+    public void VarLoad()
     {
-        path = eventPath + path;
-
-        TextAsset ta = Resources.Load(path) as TextAsset;
-        if (ta == null)
-            return new MapEventData();
-
-        MapEventData data = JsonUtility.FromJson<MapEventData>(ta.text);
-        return data;
-    }
-
-
-    private void OpenBGMFile(string path)
-    {
-        path = soundPath + path;
-
-        AudioClip clip = Resources.Load(path) as AudioClip;
-        Destroy(audioSource);
-        audioSource = gameObject.AddComponent<AudioSource>();
-        audioSource.loop = true;
-        audioSource.volume = 0.6f;
-        audioSource.clip = clip;
-        audioSource.Play();
+        var = JsonUtility.FromJson<VariableManager>((Resources.Load("var") as TextAsset).text);
     }
 
     public GameObject GetPlayer
@@ -301,34 +225,72 @@ public class StageManager : MonoBehaviour
         get { return map; }
     }
 
+    public MapSaveData Data
+    {
+        get { return data; }
+    }
+
     public Vector2 getStartPos
     {
         get { return startPos; }
     }
 
-    public bool DirLeft
-    {
-        get { return dirLeft; }
-    }
-
-    public bool DirRight
-    {
-        get { return dirRight; }
-    }
-
-    public bool DirTop
-    {
-        get { return dirTop; }
-    }
-
-    public bool DirBottom
-    {
-        get { return dirBottom; }
-    }
-
     public string getNowStageName
     {
         get { return nowStageName; }
+    }
+
+    public VariableManager Var
+    {
+        get { return var; }
+        set { var = value; }
+    }
+
+    public FlgVarData[] FlgVar
+    {
+        get { return flgVar; }
+        set { flgVar = value; }
+    }
+
+    public IntVarData[] IntVar
+    {
+        get { return intVar; }
+        set { intVar = value; }
+    }
+
+    public StrVarData[] StrVar
+    {
+        get { return strVar; }
+        set { strVar = value; }
+    }
+
+    public List<string> FlgVarNames
+    {
+        get { return flgVarNames; }
+        set { flgVarNames = value; }
+    }
+
+    public List<string> IntVarNames
+    {
+        get { return intVarNames; }
+        set { intVarNames = value; }
+    }
+
+    public List<string> StrVarNames
+    {
+        get { return strVarNames; }
+        set { strVarNames = value; }
+    }
+
+    public string ExtRemover(string str)
+    {
+        string[] strs = str.Split('.');
+        if (strs.Length == 0)
+            return str;
+        string result = "";
+        for (int i = 0; i < strs.Length - 1; i++)
+            result += strs[i];
+        return result;
     }
 }
 
@@ -346,6 +308,184 @@ public class FoldOut
 }
 
 [System.Serializable]
+public class EventCommand
+{
+    public string viewCommand;
+    public string jsonCommand;
+    public string type;
+
+    public EventCommand(string json, string com, string type)
+    {
+        jsonCommand = json;
+        viewCommand = com;
+        this.type = type;
+    }
+}
+
+[System.Serializable]
+public class EventMessageData
+{
+    public string messageWindow_text;
+}
+
+[System.Serializable]
+public class EventImageData
+{
+    public string imageName;
+    public int selectIndex;
+    public string selectName;
+    public int layerIndex;
+    public bool aspectFlg;
+    public float x;
+    public float y;
+    public float w;
+    public float h;
+}
+
+[System.Serializable]
+public class EventVarData
+{
+    public int selectFlgIndex;
+    public int selectIntIndex;
+    public int selectStrIndex;
+    public string selectFlgName;
+    public string selectIntName;
+    public string selectStrName;
+    public int varMode;
+    public int selectOprIndex;
+    public string selectOprName;
+    public int selectIntOprIndex;
+    public int selectStrOprIndex;
+    public string selectIntOprName;
+    public string selectStrOprName;
+    public int varInputMode;
+    public int varInputMode2;
+    public int selectSetFlgIndex;
+    public int selectSetIntIndex;
+    public int selectSetIntIndex2;
+    public int selectSetStrIndex;
+    public int selectSetStrIndex2;
+    public string selectSetFlgName;
+    public string selectSetIntName;
+    public string selectSetIntName2;
+    public string selectSetStrName;
+    public string selectSetStrName2;
+    public int varSetInt;
+    public int varSetInt2;
+    public bool varSetFlg;
+    public string varSetStr;
+    public string varSetStr2;
+}
+
+[System.Serializable]
+public class EventMoveData
+{
+    public int selectMoveStageIndex;
+    public string selectMoveStageName;
+    public bool moveStageSameFlag;
+    public Vector2 movePos = new Vector2(-1, -1);
+}
+
+[System.Serializable]
+public class EventIfData
+{
+    public bool interFlg;
+    public bool elseFlg;
+    public int contNum;
+    public int nowContNum;
+    public EventIfContent[] content = new EventIfContent[3];
+
+    public EventIfData()
+    {
+        for (int i = 0; i < content.Length; i++)
+        {
+            content[i] = new EventIfContent();
+        }
+    }
+}
+
+[System.Serializable]
+public class EventIfContent
+{
+    public bool isEnable;
+    public int mode = 0;
+    public int selectVarIndex1;
+    public string selectVarName1;
+    public int selectOprIndex;
+    public string selectOprName;
+    public int varInputMode;
+    public int selectVarIndex2;
+    public string selectVarName2;
+    public bool inputFlg;
+    public int inputInt;
+    public string inputStr;
+}
+
+[System.Serializable]
+public class EventSoundData
+{
+    public string soundName;
+    public string soundPath;
+    public int selectSoundIndex;
+    public bool soundLoopFlag;
+    public bool isPlayFlag;
+    public bool isPlayOffFlag;
+    public float soundFastStartTime;
+    public float soundStartTime;
+    public float soundEndTime;
+    public float soundPitch;
+    public float soundVolume;
+    public float soundPlayTime;
+    public float soundOldTime;
+}
+
+[System.Serializable]
+public class EventEffectData
+{
+
+}
+
+[System.Serializable]
+public class EventOtherData
+{
+    public string adminName;
+}
+
+[System.Serializable]
+public class EventFold
+{
+    public bool select = false;
+    public List<EventCommand> command = new List<EventCommand>();
+    public int selectStart = 0;
+    public int selectEnd = 0;
+
+    public EventFold()
+    {
+        command.Add(new EventCommand("", "■", ""));
+    }
+}
+
+[System.Serializable]
+public class MapEventChip
+{
+    public string name;
+    public float x;
+    public float y;
+    public Rect rect;
+    public int mode;
+    public EventFold _event;
+}
+
+[System.Serializable]
+public class MapData
+{
+    public string[] map;
+    public int mapSizeX;
+    public int mapSizeY;
+    public Rect viewRect;
+}
+
+[System.Serializable]
 public class MapBackgroundData
 {
     public int mode = 0;
@@ -358,16 +498,15 @@ public class MapBackgroundData
 }
 
 [System.Serializable]
-public class EventFold
+public class MapEventData
 {
-    public bool select = false;
-    public List<string> command = new List<string>();
-    public int select_command = 0;
+    public MapEventChip[] eventChip;
 }
 
 [System.Serializable]
-public class MapEventData
+public class MapSaveData
 {
-    public int eventSize = 1;
-    public EventFold[] eventFold;
+    public MapData map;
+    public MapEventData ev;
+    public MapBackgroundData bg;
 }

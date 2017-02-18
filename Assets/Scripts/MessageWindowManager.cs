@@ -1,22 +1,21 @@
 ﻿using UnityEngine;
-using System.Collections;
 using UnityEngine.UI;
 
 public class MessageWindowManager : MonoBehaviour
 {
-    public Text uiText;
-
     private GameObject canvas;
+    private GameObject messageBox;
+
+    public Text uiText;
+    public Text nameText;
 
 	void Start ()
     {
         canvas = GameObject.Find("Canvas");
-        canvas.SetActive(false);
-	}
-	
-	void Update ()
-    {
-	    
+        messageBox = canvas.transform.FindChild("NobelUI").FindChild("MessageBox").gameObject;
+        messageBox.transform.SetSiblingIndex(10000);
+        nameText.transform.parent.gameObject.SetActive(false);
+        messageBox.SetActive(false);
 	}
 
     public GameObject getCanvas
@@ -24,8 +23,18 @@ public class MessageWindowManager : MonoBehaviour
         get { return canvas; }
     }
 
+    public GameObject getMessageBox
+    {
+        get { return messageBox; }
+    }
+
     public Text getText
     {
         get { return uiText; }
+    }
+
+    public Text getNameText
+    {
+        get { return nameText; }
     }
 }
