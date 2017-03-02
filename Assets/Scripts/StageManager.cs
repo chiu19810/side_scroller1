@@ -422,6 +422,22 @@ public class EventIfContent
 }
 
 [System.Serializable]
+public class EventLoopData
+{
+    public int mode = 0;
+    public int selectVarIndex1;
+    public string selectVarName1;
+    public int selectOprIndex;
+    public string selectOprName;
+    public int varInputMode;
+    public int selectVarIndex2;
+    public string selectVarName2;
+    public bool inputFlg;
+    public int inputInt;
+    public string inputStr;
+}
+
+[System.Serializable]
 public class EventSoundData
 {
     public string soundName;

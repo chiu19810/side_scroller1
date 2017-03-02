@@ -215,10 +215,18 @@ public class PlayerController : MonoBehaviour
             acon.SetBool("Squat", true);
             moveSpeedChange = speed / 1.5f;
             horiFrame = 0;
+            boxCollider2D.size = new Vector2(boxCollider2D.size.x, 0.3f);
+            boxCollider2D.offset = new Vector2(boxCollider2D.offset.x, -0.15f);
         }
         else if (v > 0)
         {
-
+            boxCollider2D.size = new Vector2(boxCollider2D.size.x, 0.6f);
+            boxCollider2D.offset = new Vector2(boxCollider2D.offset.x, 0);
+        }
+        else
+        {
+            boxCollider2D.size = new Vector2(boxCollider2D.size.x, 0.6f);
+            boxCollider2D.offset = new Vector2(boxCollider2D.offset.x, 0);
         }
 
         if (h == 0 && v == 0)

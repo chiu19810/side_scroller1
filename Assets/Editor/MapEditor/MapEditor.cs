@@ -3,7 +3,10 @@ using UnityEditor;
 using System.IO;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-
+/* ■ メモ
+ * マップチップのリロードをメニューバーのファイルに設定で追加してリロードボタンでリロードするか、自動リロードかの設定を追加。
+ * （チップ数が多くなると自動リロードにすると重くなると思うので設定で変えれたほうが便利）
+ */
 public delegate void FuncOpener();
 public delegate void FuncSelectBoxOpener(int id);
 public class MapEditor : EditorWindow
@@ -3122,6 +3125,60 @@ public class MapEditorEventWindow : EditorWindow
             doubleCount = 0;
     }
 
+    private int func1(EventFold eve, int id)
+    {
+        if (id == -1 || id >= eve.command.Count)
+            return eve.selectStart;
+
+        int i;
+        int ifCount = 1;
+        int old = id;
+        for (i = id; i > 0; i--)
+        {
+            if (eve.command[i].jsonCommand != "" && (eve.command[i].type.IndexOf("条件") > -1 || eve.command[i].type.IndexOf("分岐") > -1))
+            {
+                int index = JsonUtility.FromJson<EventIfData>(eve.command[i].jsonCommand).nowContNum;
+                if (index == 0)
+                {
+                    ifCount--;
+                    if (ifCount == 0)
+                        break;
+                }
+                else if (id != i && index == -1)
+                    ifCount++;
+            }
+        }
+        return eve.command[id].type.IndexOf("条件") > -1 ||
+        eve.command[id].type.IndexOf("分岐") > -1 ? i == old ? id : func1(eve, i) : id;
+    }
+
+    private int func2(EventFold eve, int id)
+    {
+        if (id == -1 || id >= eve.command.Count)
+            return eve.selectStart;
+
+        int i;
+        int ifCount = 1;
+        int old = id;
+        for (i = id; i < eve.command.Count; i++)
+        {
+            if (eve.command[i].jsonCommand != "" && (eve.command[i].type.IndexOf("条件") > -1 || eve.command[i].type.IndexOf("分岐") > -1))
+            {
+                int index = JsonUtility.FromJson<EventIfData>(eve.command[i].jsonCommand).nowContNum;
+                if (index == -1)
+                {
+                    ifCount--;
+                    if (ifCount == 0)
+                        break;
+                }
+                else if (id != i && index == 0)
+                    ifCount++;
+            }
+        }
+        return eve.command[id].type.IndexOf("条件") > -1 ||
+        eve.command[id].type.IndexOf("分岐") > -1 ? i == old ? id : func2(eve, i) : id;
+    }
+
     void OnGUI()
     {
         if (parent == null)
@@ -3135,59 +3192,6 @@ public class MapEditorEventWindow : EditorWindow
             AddCommand(new EventCommand("", "■", ""));
 
         System.Func<List<EventCommand>, string[]> toStrArry = (List<EventCommand> list) => { List<string> strs = new List<string>(); for (int i = 0; i < list.Count; i++) strs.Add(list[i].viewCommand); return strs.ToArray(); };
-
-        System.Func<int, int> func1 = (int id) =>
-        {
-            if (id == -1 || id >= eve.command.Count || eve.command[id].type == null)
-                return eve.selectStart;
-
-            int i;
-            int ifCount = 1;
-            for (i = id; i > 0; i--)
-            {
-                if (eve.command[i].jsonCommand != "" && (eve.command[i].type.IndexOf("条件") > -1 || eve.command[i].type.IndexOf("分岐") > -1))
-                {
-                    int index = JsonUtility.FromJson<EventIfData>(eve.command[i].jsonCommand).nowContNum;
-                    if (index == 0)
-                    {
-                        ifCount--;
-                        if (ifCount == 0)
-                            break;
-                    }
-                    else if (id != i && index == -1)
-                        ifCount++;
-                }
-            }
-            return eve.command[id].type.IndexOf("条件") > -1 ||
-            eve.command[id].type.IndexOf("分岐") > -1 ?
-            JsonUtility.FromJson<EventIfData>(eve.command[id].jsonCommand).nowContNum == 0 ? id : i : id;
-        };
-
-        System.Func<int, int> func2 = (int id) =>
-        {
-            if (id == -1 || id >= eve.command.Count || eve.command[id].type == null )
-                return eve.selectStart;
-
-            int i;
-            int ifCount = 1;
-            for (i = id; i < eve.command.Count; i++)
-            {
-                if (eve.command[i].jsonCommand != "" && (eve.command[i].type.IndexOf("条件") > -1 || eve.command[i].type.IndexOf("分岐") > -1))
-                {
-                    int index = JsonUtility.FromJson<EventIfData>(eve.command[i].jsonCommand).nowContNum;
-                    if (index == -1)
-                    {
-                        ifCount--;
-                        if (ifCount == 0)
-                            break;
-                    }
-                    else if (id != i && index == 0)
-                        ifCount++;
-                }
-            }
-            return eve.command[id].type.IndexOf("条件") > -1 ||
-            eve.command[id].type.IndexOf("分岐") > -1 ? i : id;
-        };
 
         EditorGUILayout.Space();
         EditorGUILayout.BeginHorizontal();
@@ -3225,6 +3229,7 @@ public class MapEditorEventWindow : EditorWindow
         float x = pos.x - 224 + sb2.GetScrollPos.x;
         float y = pos.y - 63 + sb2.GetScrollPos.y;
         int posIndex = (int)(y / 19);
+        bool selectChangeFlg = false;
 
         if (e.type == EventType.MouseDown)
         {
@@ -3234,142 +3239,159 @@ public class MapEditorEventWindow : EditorWindow
                 selectStart = posIndex >= eve.command.Count ? -1 : posIndex;
             }
             selectEnd = selectStart;
+            selectChangeFlg = true;
         }
         else if (e.type == EventType.MouseDrag)
         {
             if (pos.x > 224 && pos.x < Screen.width - 23 && pos.y > 61 && pos.y < (Screen.height - 61 - 150) && selectStart != -1)
             {
                 selectEnd = posIndex >= eve.command.Count ? selectStart == posIndex ? -1 : eve.command.Count - 1 : posIndex;
+                selectChangeFlg = true;
             }
         }
 
-        eve.selectStart = selectStart > selectEnd ? selectEnd : selectStart;
-        eve.selectEnd = selectStart > selectEnd ? selectStart : selectEnd;
-        if (eve.selectStart == -1 && eve.selectEnd != -1)
+        if (selectStart != -2 && selectEnd != -2)
         {
-            eve.selectStart = eve.selectEnd;
-            eve.selectEnd = eve.command.Count - 1;
-        }
-        eve.selectStart = eve.selectStart != -1 && eve.selectStart < eve.command.Count && selectStart < eve.command.Count && selectEnd < eve.command.Count ?
-            (eve.command[selectStart].type.IndexOf("条件") > -1 || eve.command[selectStart].type.IndexOf("分岐") > -1) ?
-            func1(selectStart) : eve.selectStart : eve.selectStart;
-        eve.selectEnd = eve.selectEnd != -1 && eve.selectEnd < eve.command.Count && selectStart < eve.command.Count && selectEnd < eve.command.Count ?
-            (eve.command[selectStart].type.IndexOf("条件") > -1 || eve.command[selectStart].type.IndexOf("分岐") > -1) ?
-            func2(selectStart) : eve.selectEnd : eve.selectEnd;
-
-        if (selectStart != selectEnd && selectStart != -1 && selectEnd != -1 && selectStart < eve.command.Count && selectEnd < eve.command.Count)
-        {
-            if (selectStart > selectEnd)
+            if (selectChangeFlg)
             {
-                for (int i = selectStart; i >= selectEnd; i--)
+                eve.selectStart = selectStart > selectEnd ? selectEnd : selectStart;
+                eve.selectEnd = selectStart > selectEnd ? selectStart : selectEnd;
+                if (eve.selectStart == -1 && eve.selectEnd != -1)
                 {
-                    if (!(eve.command[i].type.IndexOf("分岐終了") > -1))
+                    eve.selectStart = eve.selectEnd;
+                    eve.selectEnd = eve.command.Count - 1;
+                }
+
+                eve.selectStart = func1(eve, eve.selectStart);
+                eve.selectEnd = func2(eve, eve.selectStart);
+            }
+
+
+
+/*            eve.selectStart = eve.selectStart != -1 && eve.selectStart < eve.command.Count && selectStart < eve.command.Count && selectEnd < eve.command.Count ?
+                ((eve.command[selectStart].type.IndexOf("条件") > -1 || eve.command[selectStart].type.IndexOf("分岐") > -1)) ?
+                selectStart < selectEnd ? func1(eve, selectStart) : func1(eve, selectEnd) : eve.selectStart : eve.selectStart;
+            eve.selectEnd = eve.selectEnd != -1 && eve.selectEnd < eve.command.Count && selectStart < eve.command.Count && selectEnd < eve.command.Count ?
+                ((eve.command[selectStart].type.IndexOf("条件") > -1 || eve.command[selectStart].type.IndexOf("分岐") > -1)) ?
+                selectStart < selectEnd ? func2(eve, selectEnd) : func2(eve, selectStart) : eve.selectEnd : eve.selectEnd;
+                */
+/*            if (selectStart != selectEnd && selectStart != -1 && selectEnd != -1 && selectStart < eve.command.Count && selectEnd < eve.command.Count)
+            {
+                if (selectStart > selectEnd)
+                {
+                    for (int i = selectStart; i >= selectEnd; i--)
                     {
-                        if (eve.command[i].type.IndexOf("分岐") > -1)
+                        if (eve.command[selectStart].type.IndexOf("分岐") > -1)
+                            break;
+
+                        if (!(eve.command[i].type.IndexOf("分岐終了") > -1))
                         {
-                            eve.selectStart = i + 1;
-                            selectEnd = i + 1;
+                            if (eve.command[i].type.IndexOf("分岐") > -1)
+                            {
+                                eve.selectStart = i + 1;
+                                selectEnd = i + 1;
+                                break;
+                            }
+
+                            if (eve.command[i].viewCommand == "■")
+                            {
+                                eve.selectEnd = i - 1;
+                                selectStart = i - 1;
+                            }
+                        }
+                        else
+                        {
+                            int count = 0;
+                            for (int j = i - 1; j >= 0; j--)
+                            {
+                                if (eve.command[j].type.IndexOf("分岐終了") > -1)
+                                    count++;
+                                else if (eve.command[j].type.IndexOf("条件") > -1)
+                                {
+                                    count--;
+                                    if (count < 0)
+                                    {
+                                        if (j > selectEnd)
+                                        {
+                                            for (int k = j; k >= selectEnd; k--)
+                                            {
+                                                if (!(eve.command[k].type.IndexOf("分岐終了") > -1))
+                                                {
+                                                    if (eve.command[k].type.IndexOf("分岐") > -1)
+                                                    {
+                                                        eve.selectStart = k + 1;
+                                                        selectEnd = k + 1;
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                            break;
+                                        }
+                                        eve.selectStart = j;
+                                        selectEnd = j;
+                                        break;
+                                    }
+                                }
+                            }
                             break;
                         }
-
-                        if (eve.command[i].viewCommand == "■")
-                        {
-                            eve.selectEnd = i - 1;
-                            selectStart = i - 1;
-                        }
                     }
-                    else
+                }
+                else
+                {
+                    for (int i = selectStart; i < selectEnd + 1; i++)
                     {
-                        int count = 0;
-                        for (int j = i - 1; j >= 0; j--)
+                        if (!(eve.command[i].type.IndexOf("条件") > -1) && ((eve.command[i].type.IndexOf("分岐終了") > -1) || !(eve.command[i].type.IndexOf("分岐") > -1)))
                         {
-                            if (eve.command[j].type.IndexOf("分岐終了") > -1)
-                                count++;
-                            else if (eve.command[j].type.IndexOf("条件") > -1)
+                            if (eve.command[i].viewCommand == "■")
                             {
-                                count--;
-                                if (count < 0)
+                                eve.selectEnd = i - 1;
+                                selectEnd = i - 1;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            int count = 0;
+                            for (int j = i + 1; j < eve.command.Count; j++)
+                            {
+                                if (eve.command[j].type.IndexOf("分岐終了") > -1)
                                 {
-                                    if (j > selectEnd)
+                                    count--;
+                                    if (count < 0)
                                     {
-                                        for (int k = j; k >= selectEnd; k--)
+                                        if (j < selectEnd)
                                         {
-                                            if (!(eve.command[k].type.IndexOf("分岐終了") > -1))
+                                            for (int k = j; k < selectEnd + 1; k++)
                                             {
-                                                if (eve.command[k].type.IndexOf("分岐") > -1)
+                                                if (eve.command[k].viewCommand == "■")
                                                 {
-                                                    eve.selectStart = k + 1;
-                                                    selectEnd = k + 1;
+                                                    eve.selectEnd = k - 1;
+                                                    selectEnd = k - 1;
                                                     break;
                                                 }
                                             }
+                                            break;
                                         }
+                                        eve.selectEnd = j;
+                                        selectEnd = j;
                                         break;
                                     }
-                                    eve.selectStart = j;
-                                    selectEnd = j;
-                                    break;
                                 }
+                                else if (eve.command[j].type.IndexOf("条件") > -1)
+                                    count++;
                             }
-                        }
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                for (int i = selectStart; i < selectEnd + 1; i++)
-                {
-                    if (!(eve.command[i].type.IndexOf("条件") > -1))
-                    {
-                        if (eve.command[i].viewCommand == "■")
-                        {
-                            eve.selectEnd = i - 1;
-                            selectEnd = i - 1;
                             break;
                         }
                     }
-                    else
-                    {
-                        int count = 0;
-                        for (int j = i + 1; j < eve.command.Count; j++)
-                        {
-                            if (eve.command[j].type.IndexOf("分岐終了") > -1)
-                            {
-                                count--;
-                                if (count < 0)
-                                {
-                                    if (j < selectEnd)
-                                    {
-                                        for (int k = j; k < selectEnd + 1; k++)
-                                        {
-                                            if (eve.command[k].viewCommand == "■")
-                                            {
-                                                eve.selectEnd = k - 1;
-                                                selectEnd = k - 1;
-                                                break;
-                                            }
-                                        }
-                                        break;
-                                    }
-                                    eve.selectEnd = j;
-                                    selectEnd = j;
-                                    break;
-                                }
-                            }
-                            else if (eve.command[j].type.IndexOf("条件") > -1)
-                                count++;
-                        }
-                        break;
-                    }
                 }
-            }
+            }*/
         }
 
-        // コマンドのコピペ
-        if (eve.selectStart != -1)
+        if (e.type == EventType.KeyDown)
         {
-            if (e.type == EventType.KeyDown)
+            // コマンドのコピペ
+            if (eve.selectStart != -1)
             {
                 if (e.keyCode == KeyCode.C)
                 {
@@ -3408,6 +3430,14 @@ public class MapEditorEventWindow : EditorWindow
                     }
                 }
             }
+
+            // 全選択
+            if (e.keyCode == KeyCode.A)
+            {
+                selectStart = eve.selectStart = 0;
+                selectEnd = eve.selectEnd = eve.command.Count;
+                Repaint();
+            }
         }
 
         EditorGUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(Screen.width - LEFT_W - 7), GUILayout.Height(Screen.height - 90 - 160));
@@ -3425,7 +3455,7 @@ public class MapEditorEventWindow : EditorWindow
                     if (eve.command[id].type.IndexOf("分岐") > -1)
                     {
                         subWindow = EventCommandWindow.WillAppear(this);
-                        subWindow.initCommand(func1(eve.selectStart), eve.command[id]);
+                        subWindow.initCommand(func1(eve, eve.selectStart), eve.command[id]);
                     }
                 }
             }));
@@ -3457,10 +3487,10 @@ public class MapEditorEventWindow : EditorWindow
             {
                 if (eve.selectStart != -1 && eve.selectStart != 0 && eve.command.Count > eve.selectStart)
                 {
-                    int num1_min = func1(eve.selectStart - 1);
-                    int num1_max = func2(eve.selectStart - 1);
-                    int num2_min = func1(eve.selectStart);
-                    int num2_max = func2(eve.selectStart);
+                    int num1_min = func1(eve, eve.selectStart - 1);
+                    int num1_max = func2(eve, eve.selectStart - 1);
+                    int num2_min = eve.selectStart;
+                    int num2_max = eve.selectEnd;
 
                     if (eve.command[num1_min].viewCommand != "■" &&
                         eve.command[num1_max].viewCommand != "■" &&
@@ -3470,8 +3500,9 @@ public class MapEditorEventWindow : EditorWindow
                     {
                         ChangeRangeCommand(num1_min, num1_max, num2_min, num2_max);
                         eve.selectStart = num1_min;
-                        selectStart = num1_min;
-                        selectEnd = num1_max;
+                        eve.selectEnd = num1_min + (num2_max - num2_min);
+                        selectStart = -2;
+                        selectEnd = -2;
                         Repaint();
                     }
                 }
@@ -3480,10 +3511,10 @@ public class MapEditorEventWindow : EditorWindow
             {
                 if (eve.selectStart != -1 && eve.selectStart != eve.command.Count - 1 && eve.command.Count > eve.selectStart)
                 {
-                    int num1_min = func1(eve.selectStart);
-                    int num1_max = func2(eve.selectStart);
-                    int num2_min = func1(num1_max + 1);
-                    int num2_max = func2(num1_max + 1);
+                    int num1_min = eve.selectStart;
+                    int num1_max = eve.selectEnd;
+                    int num2_min = func1(eve, num1_max + 1);
+                    int num2_max = func2(eve, num1_max + 1);
 
                     if (eve.command[num1_min].viewCommand != "■" &&
                         eve.command[num1_max].viewCommand != "■" &&
@@ -3491,9 +3522,10 @@ public class MapEditorEventWindow : EditorWindow
                         eve.command[num2_max].viewCommand != "■")
                     {
                         ChangeRangeCommand(num1_min, num1_max, num2_min, num2_max);
-                        eve.selectStart = num2_min;
-                        selectStart = num2_min;
-                        selectEnd = num2_max;
+                        eve.selectStart = num2_min - (num1_max - num1_min);
+                        eve.selectEnd = num2_min;
+                        selectStart = -2;
+                        selectEnd = -2;
                         Repaint();
                     }
                 }
@@ -3687,9 +3719,10 @@ public class EventCommandWindow : EditorWindow
     private int mode;
     private int selectID;
     private bool nullComFlg;
+    private EventCommand evcom;
     private Drawer d = new Drawer();
     private SelectBox sb = new SelectBox();
-    private string[] commandList = new string[] { "文章の表示", "画像操作", "変数操作", "条件文", "場所移動", "サウンド", "エフェクト", "その他" };
+    private string[] commandList = new string[] { "文章の表示", "画像操作", "変数操作", "条件文", "ループ文", "場所移動", "サウンド", "エフェクト", "その他" };
 
     public MapEditorEventWindow parent;
 
@@ -3716,6 +3749,9 @@ public class EventCommandWindow : EditorWindow
 
     // 条件文
     private EventIfData eventIf = new EventIfData();
+
+    // ループ
+    private EventLoopData eventLoop = new EventLoopData();
 
     // サウンド
     private EventSoundData eventSound = new EventSoundData();
@@ -3820,6 +3856,7 @@ public class EventCommandWindow : EditorWindow
             return;
         }
 
+        this.evcom = evcom;
         titleContent = new GUIContent("編集");
         selectID = id;
         mode = 1;
@@ -3850,7 +3887,8 @@ public class EventCommandWindow : EditorWindow
                 selectCommandList = getCmdIndexFunc("画像操作");
                 break;
             case "画像非表示":
-
+                eventOther = JsonUtility.FromJson<EventOtherData>(evcom.jsonCommand);
+                selectCommandList = getCmdIndexFunc("その他");
                 break;
             case "変数":
                 eventVar = JsonUtility.FromJson<EventVarData>(evcom.jsonCommand);
@@ -3858,6 +3896,10 @@ public class EventCommandWindow : EditorWindow
                 break;
             case "条件":
                 eventIf = JsonUtility.FromJson<EventIfData>(evcom.jsonCommand);
+                selectCommandList = getCmdIndexFunc(command);
+                break;
+            case "ループ":
+                eventLoop = JsonUtility.FromJson<EventLoopData>(evcom.jsonCommand);
                 selectCommandList = getCmdIndexFunc(command);
                 break;
             case "移動":
@@ -3921,7 +3963,8 @@ public class EventCommandWindow : EditorWindow
                 selectCommandList = getCmdIndexFunc("サウンド");
                 break;
             case "サウンド停止":
-                Close();
+                eventOther = JsonUtility.FromJson<EventOtherData>(evcom.jsonCommand);
+                selectCommandList = getCmdIndexFunc("その他");
                 break;
         }
         Repaint();
@@ -4004,7 +4047,9 @@ public class EventCommandWindow : EditorWindow
 
                 GUIStyle style = new GUIStyle(GUI.skin.textArea);
                 style.wordWrap = true;
+                GUI.SetNextControlName("text");
                 eventMessage.messageWindow_text = EditorGUILayout.TextArea(eventMessage.messageWindow_text, style, GUILayout.Height(Screen.height - (mode == 0 ? 120 : 80)));
+                GUI.FocusControl("text");
                 if (mode == 0)
                 {
                     autoCloseMessageFlag = GUILayout.Toggle(autoCloseMessageFlag, " メッセージウィンドウを自動で閉じる");
@@ -4363,6 +4408,113 @@ public class EventCommandWindow : EditorWindow
                 EditorGUILayout.EndVertical();
                 GUILayout.Space(20);
                 break;
+            case "ループ文":
+                EditorGUILayout.BeginVertical();
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(10);
+                if (GUILayout.Toggle(eventLoop.mode == 0, "フラグ", GUI.skin.button))
+                    eventLoop.mode = 0;
+                if (GUILayout.Toggle(eventLoop.mode == 1, "整数", GUI.skin.button))
+                    eventLoop.mode = 1;
+                if (GUILayout.Toggle(eventLoop.mode == 2, "文字列", GUI.skin.button))
+                    eventLoop.mode = 2;
+                EditorGUILayout.EndHorizontal();
+
+                switch (eventLoop.mode)
+                {
+                    case 0:
+                        // フラグ
+                        EditorGUILayout.BeginHorizontal();
+                        GUILayout.FlexibleSpace();
+                        EditorGUILayout.BeginHorizontal(GUILayout.Width(150));
+                        if (GUILayout.Toggle(eventLoop.varInputMode == 0, "手動", GUI.skin.button))
+                            eventLoop.varInputMode = 0;
+                        if (GUILayout.Toggle(eventLoop.varInputMode == 1, "変数", GUI.skin.button))
+                            eventLoop.varInputMode = 1;
+                        EditorGUILayout.EndHorizontal();
+                        EditorGUILayout.EndHorizontal();
+                        EditorGUILayout.BeginHorizontal();
+                        GUILayout.Space(30);
+                        eventLoop.selectVarIndex1 = EditorGUILayout.Popup(eventLoop.selectVarIndex1, flgVarNames.ToArray());
+                        GUILayout.Space(30);
+                        eventLoop.selectOprIndex = EditorGUILayout.Popup(eventLoop.selectOprIndex, new string[] { "==", "!=" }, GUILayout.Width(50));
+                        GUILayout.Space(30);
+                        switch (eventLoop.varInputMode)
+                        {
+                            case 0:
+                                eventLoop.inputFlg = GUILayout.Toggle(eventLoop.inputFlg, eventLoop.inputFlg ? "オン" : "オフ", GUI.skin.button, GUILayout.Width(100), GUILayout.Height(15));
+                                break;
+                            case 1:
+                                eventLoop.selectVarIndex2 = EditorGUILayout.Popup(eventLoop.selectVarIndex2, flgVarNames.ToArray());
+                                break;
+                        }
+                        EditorGUILayout.EndHorizontal();
+                        EditorGUI.EndDisabledGroup();
+                        break;
+                    case 1:
+                        // 整数
+                        EditorGUILayout.BeginHorizontal();
+                        GUILayout.FlexibleSpace();
+                        EditorGUILayout.BeginHorizontal(GUILayout.Width(150));
+                        if (GUILayout.Toggle(eventLoop.varInputMode == 0, "手動", GUI.skin.button))
+                            eventLoop.varInputMode = 0;
+                        if (GUILayout.Toggle(eventLoop.varInputMode == 1, "変数", GUI.skin.button))
+                            eventLoop.varInputMode = 1;
+                        EditorGUILayout.EndHorizontal();
+                        EditorGUILayout.EndHorizontal();
+                        EditorGUI.EndDisabledGroup();
+                        EditorGUILayout.BeginHorizontal();
+                        GUILayout.Space(30);
+                        eventLoop.selectVarIndex1 = EditorGUILayout.Popup(eventLoop.selectVarIndex1, intVarNames.ToArray());
+                        GUILayout.Space(30);
+                        eventLoop.selectOprIndex = EditorGUILayout.Popup(eventLoop.selectOprIndex, new string[] { "==", "!=", "<=", ">=", "<", ">" }, GUILayout.Width(50));
+                        GUILayout.Space(30);
+                        switch (eventLoop.varInputMode)
+                        {
+                            case 0:
+                                eventLoop.inputInt = EditorGUILayout.IntField(eventLoop.inputInt, GUILayout.Width(100));
+                                break;
+                            case 1:
+                                eventLoop.selectVarIndex2 = EditorGUILayout.Popup(eventLoop.selectVarIndex2, intVarNames.ToArray());
+                                break;
+                        }
+                        EditorGUILayout.EndHorizontal();
+                        EditorGUI.EndDisabledGroup();
+                        break;
+                    case 2:
+                        // 文字列
+                        EditorGUILayout.BeginHorizontal();
+                        GUILayout.FlexibleSpace();
+                        EditorGUILayout.BeginHorizontal(GUILayout.Width(150));
+                        if (GUILayout.Toggle(eventLoop.varInputMode == 0, "手動", GUI.skin.button))
+                            eventLoop.varInputMode = 0;
+                        if (GUILayout.Toggle(eventLoop.varInputMode == 1, "変数", GUI.skin.button))
+                            eventLoop.varInputMode = 1;
+                        EditorGUILayout.EndHorizontal();
+                        EditorGUILayout.EndHorizontal();
+                        EditorGUILayout.BeginHorizontal();
+                        GUILayout.Space(30);
+                        eventLoop.selectVarIndex1 = EditorGUILayout.Popup(eventLoop.selectVarIndex1, strVarNames.ToArray());
+                        GUILayout.Space(30);
+                        eventLoop.selectOprIndex = EditorGUILayout.Popup(eventLoop.selectOprIndex, new string[] { "==", "!=" }, GUILayout.Width(50));
+                        GUILayout.Space(30);
+                        switch (eventLoop.varInputMode)
+                        {
+                            case 0:
+                                eventLoop.inputStr = EditorGUILayout.TextField(eventLoop.inputStr, GUILayout.Width(100));
+                                break;
+                            case 1:
+                                eventLoop.selectVarIndex2 = EditorGUILayout.Popup(eventLoop.selectVarIndex2, strVarNames.ToArray());
+                                break;
+                        }
+                        EditorGUILayout.EndHorizontal();
+                        EditorGUI.EndDisabledGroup();
+                        break;
+                }
+                GUILayout.Label("※ 条件がTRUEの間ループします。");
+                EditorGUILayout.EndVertical();
+                GUILayout.Space(20);
+                break;
             case "場所移動":
                 EditorGUILayout.BeginVertical();
                 EditorGUI.BeginDisabledGroup(eventMove.moveStageSameFlag);
@@ -4524,38 +4676,41 @@ public class EventCommandWindow : EditorWindow
                 EditorGUILayout.BeginVertical();
                 eventOther.adminName = EditorGUILayout.TextField("管理名 : ", eventOther.adminName);
 
-                EditorGUILayout.BeginHorizontal();
-                if (GUILayout.Button("サウンド停止", GUILayout.Width(120), GUILayout.Height(30)))
+                if (mode == 0)
                 {
-                    GUI.FocusControl("");
-                    if (mode == 0 && !nullComFlg)
+                    EditorGUILayout.BeginHorizontal();
+                    if (GUILayout.Button("サウンド停止", GUILayout.Width(120), GUILayout.Height(30)))
                     {
-                        if (eve.selectStart != -1)
+                        GUI.FocusControl("");
+                        if (!nullComFlg)
+                        {
+                            if (eve.selectStart != -1)
+                                parent.InsertCommand(new EventCommand(JsonUtility.ToJson(eventOther), "@Color=#992;■[サウンド停止]管理名:" + eventOther.adminName, "サウンド停止"));
+                            else
+                                parent.InsertAddCommand(new EventCommand(JsonUtility.ToJson(eventOther), "@Color=#992;■[サウンド停止]管理名:" + eventOther.adminName, "サウンド停止"));
+                        }
+                        else if (nullComFlg)
                             parent.InsertCommand(new EventCommand(JsonUtility.ToJson(eventOther), "@Color=#992;■[サウンド停止]管理名:" + eventOther.adminName, "サウンド停止"));
-                        else
-                            parent.InsertAddCommand(new EventCommand(JsonUtility.ToJson(eventOther), "@Color=#992;■[サウンド停止]管理名:" + eventOther.adminName, "サウンド停止"));
+                        parent.Repaint();
+                        Close();
                     }
-                    else if (nullComFlg)
-                        parent.InsertCommand(new EventCommand(JsonUtility.ToJson(eventOther), "@Color=#992;■[サウンド停止]管理名:" + eventOther.adminName, "サウンド停止"));
-                    parent.Repaint();
-                    Close();
-                }
-                if (GUILayout.Button("画像非表示", GUILayout.Width(120), GUILayout.Height(30)))
-                {
-                    GUI.FocusControl("");
-                    if (mode == 0 && !nullComFlg)
+                    if (GUILayout.Button("画像非表示", GUILayout.Width(120), GUILayout.Height(30)))
                     {
-                        if (eve.selectStart != -1)
+                        GUI.FocusControl("");
+                        if (!nullComFlg)
+                        {
+                            if (eve.selectStart != -1)
+                                parent.InsertCommand(new EventCommand(JsonUtility.ToJson(eventOther), "@Color=#992;■[画像非表示]管理名:" + eventOther.adminName, "画像非表示"));
+                            else
+                                parent.InsertAddCommand(new EventCommand(JsonUtility.ToJson(eventOther), "@Color=#992;■[画像非表示]管理名:" + eventOther.adminName, "画像非表示"));
+                        }
+                        else if (nullComFlg)
                             parent.InsertCommand(new EventCommand(JsonUtility.ToJson(eventOther), "@Color=#992;■[画像非表示]管理名:" + eventOther.adminName, "画像非表示"));
-                        else
-                            parent.InsertAddCommand(new EventCommand(JsonUtility.ToJson(eventOther), "@Color=#992;■[画像非表示]管理名:" + eventOther.adminName, "画像非表示"));
+                        parent.Repaint();
+                        Close();
                     }
-                    else if (nullComFlg)
-                        parent.InsertCommand(new EventCommand(JsonUtility.ToJson(eventOther), "@Color=#992;■[画像非表示]管理名:" + eventOther.adminName, "画像非表示"));
-                    parent.Repaint();
-                    Close();
+                    EditorGUILayout.EndHorizontal();
                 }
-                EditorGUILayout.EndHorizontal();
 
                 EditorGUILayout.EndVertical();
                 break;
@@ -4692,6 +4847,27 @@ public class EventCommandWindow : EditorWindow
                         parent.Repaint();
                         Close();
                         break;
+                    case "ループ文":
+                        List<EventCommand> evLoopComList = new List<EventCommand>();
+
+                        evLoopComList.Add(new EventCommand(JsonUtility.ToJson(eventIf), "■[ループ開始]" + eventLoop.selectVarName1 + "\" " + eventLoop.selectOprName + " " + (eventLoop.varInputMode == 0 ? (eventLoop.mode == 0 ? "" + eventLoop.inputFlg : eventLoop.mode == 1 ? "" + eventLoop.inputInt : eventLoop.mode == 2 ? eventLoop.inputStr : "") : eventLoop.selectVarName2), "ループ開始"));
+                        evLoopComList.Add(new EventCommand("", "■", ""));
+                        evLoopComList.Add(new EventCommand(JsonUtility.ToJson(eventIf), "@Color=#777;◇ループ終了", "ループ終了"));
+
+                        if (mode == 0 && !nullComFlg)
+                        {
+                            if (eve.selectStart != -1)
+                                parent.InsertRangeCommand(evLoopComList);
+                            else
+                                parent.InsertAddRangeCommand(evLoopComList);
+                        }
+                        else if (!nullComFlg)
+                            parent.SetRangeIfCommand(selectID, evLoopComList);
+                        else
+                            parent.InsertRangeCommand(evLoopComList);
+                        parent.Repaint();
+                        Close();
+                        break;
                     case "場所移動":
                         if (eventMove.selectMoveStageIndex != -1)
                         {
@@ -4740,9 +4916,31 @@ public class EventCommandWindow : EditorWindow
                     case "エフェクト":
 
                         break;
-                }
+                    }
             }
             EditorGUI.EndDisabledGroup();
+        }
+        else
+        {
+            if (mode == 1)
+            {
+                // その他
+                if (GUILayout.Button(btName, GUILayout.Height(30)))
+                {
+                    if (evcom.type.IndexOf("サウンド") > -1)
+                    {
+                        GUI.FocusControl("");
+                        parent.SetCommand(selectID, new EventCommand(JsonUtility.ToJson(eventOther), "@Color=#992;■[サウンド停止]管理名:" + eventOther.adminName, "サウンド停止"));
+                    }
+                    else if (evcom.type.IndexOf("画像") > -1)
+                    {
+                        GUI.FocusControl("");
+                        parent.SetCommand(selectID, new EventCommand(JsonUtility.ToJson(eventOther), "@Color=#992;■[画像非表示]管理名:" + eventOther.adminName, "画像非表示"));
+                    }
+                    parent.Repaint();
+                    Close();
+                }
+            }
         }
 
         EditorGUILayout.EndVertical();
@@ -5371,6 +5569,7 @@ public class SelectBox
             bool flag = false;
             Rect workArea = GUILayoutUtility.GetRect(10, 10000, 10, 10000);
             scrollPos = GUI.BeginScrollView(workArea, scrollPos, rect, scrollXFlg, scrollYFlg);
+            Regex reg = new Regex(@"^@Color=(?<value>.*?);");
 
             for (int i = 0; i < str.Length; i++)
             {
@@ -5391,7 +5590,6 @@ public class SelectBox
                     tex.SetPixels(c);
                     state2.background = tex;
                     state2.textColor = Color.white;
-                    Regex reg = new Regex(@"^@Color=(?<value>.*?);");
                     Color col = new Color();
                     if (ColorUtility.TryParseHtmlString(reg.Match(str[i]).Groups["value"].Value, out col))
                     {
