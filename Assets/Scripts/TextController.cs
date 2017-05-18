@@ -8,14 +8,17 @@ public class TextController : MonoBehaviour
 	public float intervalForCharacterDisplay = 1.5f;
 	public string[] scenarios;
 	[SerializeField]
-    public Text uiText;
-    public Text nameText;
+    public Text uiText1;
+    public Text nameText1;
+    public Text uiText2;
+    public Text nameText2;
 
-	private float timeUntilDisplay = 0;
+    private float timeUntilDisplay = 0;
 	private float timeElapsed = 1;
     private int time = 0;
 	private int currentLine = 0;
 	private int lastUpdateCharacter = -1;
+    private int window_mode = 0;
 	private string currentText = "";
     private bool isCompleteAllTextFlag = false;
     private bool textWindowCloseFlag = false;
@@ -36,12 +39,20 @@ public class TextController : MonoBehaviour
 	void Update () 
 	{
         bool input = Input.GetMouseButtonDown(0) || Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Z) || Input.GetKeyDown(KeyCode.Return);
+        Text uiText = window_mode == 0 ? uiText1 : window_mode == 1 ? uiText2 : null;
 
         if (currentText == "")
         {
             messageBox.SetActive(false);
             isCompleteAllTextFlag = true;
             return;
+        }
+
+        int displayCharacterCount = (int)(Mathf.Clamp01((time - timeElapsed) / timeUntilDisplay) * currentText.Length);
+        if (displayCharacterCount != lastUpdateCharacter)
+        {
+            uiText.text = currentText.Substring(0, displayCharacterCount);
+            lastUpdateCharacter = displayCharacterCount;
         }
 
         // 文字の表示が完了してるならクリック時に次の行を表示する
@@ -54,7 +65,10 @@ public class TextController : MonoBehaviour
                 if (textWindowCloseFlag)
                 {
                     messageBox.SetActive(false);
-                    uiText.text = "";
+                    uiText1.text = "";
+                    uiText2.text = "";
+                    nameText1.text = "";
+                    nameText2.text = "";
                     isCompleteAllTextFlag = true;
                 }
                 else
@@ -71,14 +85,6 @@ public class TextController : MonoBehaviour
 				timeUntilDisplay = 0;
 			}
 		}
-
-		int displayCharacterCount = (int)(Mathf.Clamp01((time - timeElapsed) / timeUntilDisplay) * currentText.Length);
-		if(displayCharacterCount != lastUpdateCharacter)
-        {
-			uiText.text = currentText.Substring(0, displayCharacterCount);
-			lastUpdateCharacter = displayCharacterCount;
-		}
-
         time++;
 	}
 
@@ -89,6 +95,9 @@ public class TextController : MonoBehaviour
         // コマンド置換
         if (currentLine < scenarios.Length)
             currentText = CommandReplace(currentText);
+
+        Text uiText = window_mode == 0 ? uiText1 : window_mode == 1 ? uiText2 : null;
+        uiText.color = new Color(1, 1, 1, 1);
 
         timeUntilDisplay = currentText.Length * intervalForCharacterDisplay;
 		timeElapsed = time;
@@ -117,6 +126,8 @@ public class TextController : MonoBehaviour
         Regex reg = new Regex(@"\[(?<value>.*?)\]");
         while (true)
         {
+            Text nameText = window_mode == 0 ? nameText1 : window_mode == 1 ? nameText2 : null;
+
             string cmd = reg.Match(result).Groups["value"].Value;
             if (cmd == "")
                 break;
@@ -133,6 +144,16 @@ public class TextController : MonoBehaviour
             else if (cmd.IndexOf("閉じる") > -1)
             {
                 textWindowCloseFlag = true;
+            }
+            else if (cmd.IndexOf("ウィンドウ1") > -1)
+            {
+                window_mode = 0;
+                uiText2.color = new Color(1, 1, 1, 0.5f);
+            }
+            else if (cmd.IndexOf("ウィンドウ2") > -1)
+            {
+                window_mode = 1;
+                uiText1.color = new Color(1, 1, 1, 0.5f);
             }
             else if (cmd.IndexOf("変数") > -1)
             {

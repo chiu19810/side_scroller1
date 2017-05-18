@@ -91,6 +91,7 @@ public class PlayerController : MonoBehaviour
         bool isJumpDown = Input.GetButtonDown("Jump");
         bool isJump = Input.GetButton("Jump");
         bool isJumpUp = Input.GetButtonUp("Jump");
+        bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
 
         if (isJumpDown && jumpButtonFrame == 0)
             jumpButtonFrame++;
@@ -115,17 +116,29 @@ public class PlayerController : MonoBehaviour
                 rb.velocity = new Vector2(rb.velocity.x, 0);
                 acon.SetBool("Jump", false);
 
-                if (jumpButtonFrame == 8 && !acon.GetBool("Jump"))
+                if (shift)
                 {
-                    jumpFrame = 10;
-                    acon.SetBool("Jump", true);
-                    rb.AddForce(Vector2.up * Bjump / 60, ForceMode2D.Impulse);
+                    if (isJump && !acon.GetBool("Jump"))
+                    {
+                        jumpFrame = 10;
+                        acon.SetBool("Jump", true);
+                        rb.AddForce(Vector2.up * Sjump / 60, ForceMode2D.Impulse);
+                    }
                 }
-                else if (jumpButtonFrame < 8 && isJumpUp && !acon.GetBool("Jump"))
+                else
                 {
-                    jumpFrame = 10;
-                    acon.SetBool("Jump", true);
-                    rb.AddForce(Vector2.up * Sjump / 60, ForceMode2D.Impulse);
+                    if (jumpButtonFrame == 8 && !acon.GetBool("Jump"))
+                    {
+                        jumpFrame = 10;
+                        acon.SetBool("Jump", true);
+                        rb.AddForce(Vector2.up * Bjump / 60, ForceMode2D.Impulse);
+                    }
+                    else if (jumpButtonFrame < 8 && isJumpUp && !acon.GetBool("Jump"))
+                    {
+                        jumpFrame = 10;
+                        acon.SetBool("Jump", true);
+                        rb.AddForce(Vector2.up * Sjump / 60, ForceMode2D.Impulse);
+                    }
                 }
             }
         }
@@ -148,6 +161,7 @@ public class PlayerController : MonoBehaviour
     {
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
+        bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
 
         if (stage.getMap == null)
             return;
@@ -181,11 +195,16 @@ public class PlayerController : MonoBehaviour
 
         if (h < 0)
         {
+            horiFrame++;
             acon.SetBool("Squat", false);
             acon.SetBool("Idol", false);
             acon.SetBool("Left", true);
             acon.SetBool("Right", false);
-            horiFrame++;
+
+            if (horiFrame < horiCount)
+                acon.SetBool("Run", false);
+            else
+                acon.SetBool("Run", true);
 
             if (x <= 0)
             {
@@ -194,11 +213,16 @@ public class PlayerController : MonoBehaviour
         }
         else if (h > 0)
         {
+            horiFrame++;
             acon.SetBool("Squat", false);
             acon.SetBool("Idol", false);
             acon.SetBool("Left", false);
             acon.SetBool("Right", true);
-            horiFrame++;
+
+            if (horiFrame < horiCount)
+                acon.SetBool("Run", false);
+            else
+                acon.SetBool("Run", true);
 
             if (x + stage.chipSizeX >= stageSizeW)
             {
@@ -213,6 +237,7 @@ public class PlayerController : MonoBehaviour
         if (v < 0)
         {
             acon.SetBool("Squat", true);
+            acon.SetBool("Run", false);
             moveSpeedChange = speed / 1.5f;
             horiFrame = 0;
             boxCollider2D.size = new Vector2(boxCollider2D.size.x, 0.3f);
@@ -235,12 +260,19 @@ public class PlayerController : MonoBehaviour
             {
                 idolFrame = 0;
                 acon.SetBool("Squat", false);
+                acon.SetBool("Run", false);
                 acon.SetBool("Idol", true);
                 acon.SetBool("Left", false);
                 acon.SetBool("Right", false);
             }
 
             idolFrame++;
+        }
+
+        if (shift)
+        {
+            acon.SetBool("Run", false);
+            moveSpeedChange = speed / 1.5f;
         }
 
         if (!horiJumpFlag && !jumpMoveFlag && !isGround)

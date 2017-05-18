@@ -88,7 +88,8 @@ public class StageManager : MonoBehaviour
         nowStageName = path;
 
         MessageWindowManager mwm = GameObject.Find("SystemManager").GetComponent<MessageWindowManager>();
-        mwm.getText.text = "";
+        mwm.getText1.text = "";
+        mwm.getText2.text = "";
         mwm.getMessageBox.SetActive(false);
 
         map = new string[data.map.mapSizeY, data.map.mapSizeX];

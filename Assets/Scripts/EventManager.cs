@@ -23,8 +23,10 @@ public class EventManager : MonoBehaviour
     private GameObject canvas;
     private GameObject messageBox;
     private TextController textController;
-    private Text uiText;
-    private Text nameText;
+    private Text uiText1;
+    private Text nameText1;
+    private Text uiText2;
+    private Text nameText2;
     private StageManager stage;
 
     public static Dictionary<string, AudioSource> audioSources = new Dictionary<string, AudioSource>();
@@ -35,8 +37,10 @@ public class EventManager : MonoBehaviour
         stage = GameObject.Find("StageManager").GetComponent<StageManager>();
         canvas = messageMgr.getCanvas;
         messageBox = messageMgr.getMessageBox;
-        uiText = messageMgr.getText;
-        nameText = messageMgr.getNameText;
+        uiText1 = messageMgr.getText1;
+        nameText1 = messageMgr.getNameText1;
+        uiText2 = messageMgr.getText2;
+        nameText2 = messageMgr.getNameText2;
         init();
 
         // 自動実行
@@ -206,8 +210,10 @@ public class EventManager : MonoBehaviour
                     textManager.AddComponent<TextController>();
                     textController = textManager.GetComponent<TextController>();
                     textController.scenarios = messages;
-                    textController.uiText = uiText;
-                    textController.nameText = nameText;
+                    textController.uiText1 = uiText1;
+                    textController.nameText1 = nameText1;
+                    textController.uiText2 = uiText2;
+                    textController.nameText2 = nameText2;
                     stage.GetPlayer.GetComponent<PlayerController>().PlayerMoveFlag = false;
                 }
                 else
@@ -1418,7 +1424,8 @@ public class EventManager : MonoBehaviour
             else
             {
                 messageBox.SetActive(false);
-                textController.uiText.text = "";
+                textController.uiText1.text = "";
+                textController.uiText2.text = "";
                 i++;
             }
 
