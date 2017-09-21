@@ -34,7 +34,6 @@ public class MapEditor : EditorWindow
     private string chipSearchPath = "Assets/Resources/Prefabs/MapChip/";
     private string objectSearchPath = "Assets/Resources/Prefabs/MapObject/";
     private string defaultDirectory = "Assets/Resources/Map/Stages/";
-    private string defaultMapDirectory = "Assets/Resources/Map/Maps/";
     private string defaultBackgroundDirectory = "Assets/Resources/Map/Backgrounds/";
     private string defaultEventDirectory = "Assets/Resources/Map/Events/";
     private string defaultSoundDirectory = "Assets/Resources/Sounds/";
@@ -2331,7 +2330,7 @@ public class MapEditor : EditorWindow
                 return;
             }
 
-            path = EditorUtility.SaveFilePanel("select file", defaultMapDirectory, fileMapName, "txt");
+            path = EditorUtility.SaveFilePanel("select file", defaultDirectory, fileMapName, "txt");
 
             if (path == "")
                 return;
@@ -2455,7 +2454,7 @@ public class MapEditor : EditorWindow
             }
 
             // マップ
-            string path = EditorUtility.OpenFilePanel("select file", defaultMapDirectory, "txt");
+            string path = EditorUtility.OpenFilePanel("select file", defaultDirectory, "txt");
 
             if (!string.IsNullOrEmpty(path))
             {
@@ -2685,10 +2684,6 @@ public class MapEditor : EditorWindow
     public string DefaultDirectory
     {
         get { return defaultDirectory; }
-    }
-    public string DefaultMapDirectory
-    {
-        get { return defaultMapDirectory; }
     }
     public string DefaultBackgroundDirectory
     {

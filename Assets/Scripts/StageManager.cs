@@ -10,6 +10,7 @@ public class StageManager : MonoBehaviour
     private string soundPath = "Sounds/BGM/";
     private string nowStageName;
     private Vector2 startPos = Vector2.zero;
+    private Animator acon;
     private GameObject PlayerInstance;
     private GameObject stages;
     private MapSaveData data = new MapSaveData();
@@ -33,6 +34,7 @@ public class StageManager : MonoBehaviour
     {
         GameObject prefab = (GameObject)Resources.Load("Prefabs/Player");
         PlayerInstance = Instantiate(prefab, new Vector3(-100, -100, 0), Quaternion.identity) as GameObject;
+        acon = PlayerInstance.GetComponent<Animator>();
         StageInit(startMap);
 
         for (int i = 0; i < 10; i++)
@@ -166,6 +168,11 @@ public class StageManager : MonoBehaviour
                     {
                         startPos = new Vector2(x, y);
                         PlayerInstance.transform.position = startPos;
+                        acon.SetBool("Squat", false);
+                        acon.SetBool("Run", false);
+                        acon.SetBool("Idol", true);
+                        acon.SetBool("Left", false);
+                        acon.SetBool("Right", false);
                     }
                     else
                     {

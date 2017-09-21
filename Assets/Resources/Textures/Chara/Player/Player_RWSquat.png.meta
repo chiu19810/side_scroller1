@@ -1,25 +1,19 @@
 fileFormatVersion: 2
-guid: 8d9b847c833e93742b896d1030c738b2
-timeCreated: 1505610911
+guid: 4535e709bd2565842a15275b439edec3
+timeCreated: 1505744807
 licenseType: Free
 TextureImporter:
   fileIDToRecycleName:
-    21300000: Player_RRun_0
-    21300002: Player_RRun_1
-    21300004: Player_RRun_2
-    21300006: Player_RRun_3
-    21300008: Player_RRun_4
-    21300010: Player_RRun_5
-    21300012: Player_RRun_6
-    21300014: Player_RRun_7
-    21300016: Player_RRun_8
-    21300018: Player_RRun_9
-    21300020: Player_RRun_10
-    21300022: Player_RRun_11
-    21300024: Player_RRun_12
-    21300026: Player_RRun_13
-    21300028: Player_RRun_14
-    21300030: Player_RRun_15
+    21300000: Player_RWSquat_0
+    21300002: Player_RWSquat_1
+    21300004: Player_RWSquat_2
+    21300006: Player_RWSquat_3
+    21300008: Player_RWSquat_4
+    21300010: Player_RWSquat_5
+    21300012: Player_RWSquat_6
+    21300014: Player_RWSquat_7
+    21300016: Player_RWSquat_8
+    21300018: Player_RWSquat_9
   serializedVersion: 2
   mipmaps:
     mipMapMode: 0
@@ -64,17 +58,12 @@ TextureImporter:
   alphaIsTransparency: 1
   spriteTessellationDetail: -1
   textureType: 8
-  buildTargetSettings:
-  - buildTarget: Standalone
-    maxTextureSize: 8192
-    textureFormat: -1
-    compressionQuality: 50
-    allowsAlphaSplitting: 0
+  buildTargetSettings: []
   spriteSheet:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Player_RRun_0
+      name: Player_RWSquat_0
       rect:
         serializedVersion: 2
         x: 0
@@ -87,7 +76,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: Player_RRun_1
+      name: Player_RWSquat_1
       rect:
         serializedVersion: 2
         x: 64
@@ -100,7 +89,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: Player_RRun_2
+      name: Player_RWSquat_2
       rect:
         serializedVersion: 2
         x: 128
@@ -113,7 +102,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: Player_RRun_3
+      name: Player_RWSquat_3
       rect:
         serializedVersion: 2
         x: 192
@@ -126,7 +115,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: Player_RRun_4
+      name: Player_RWSquat_4
       rect:
         serializedVersion: 2
         x: 256
@@ -139,7 +128,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: Player_RRun_5
+      name: Player_RWSquat_5
       rect:
         serializedVersion: 2
         x: 320
@@ -152,7 +141,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: Player_RRun_6
+      name: Player_RWSquat_6
       rect:
         serializedVersion: 2
         x: 384
@@ -165,7 +154,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: Player_RRun_7
+      name: Player_RWSquat_7
       rect:
         serializedVersion: 2
         x: 448
@@ -178,7 +167,7 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: Player_RRun_8
+      name: Player_RWSquat_8
       rect:
         serializedVersion: 2
         x: 512
@@ -191,88 +180,10 @@ TextureImporter:
       outline: []
       tessellationDetail: 0
     - serializedVersion: 2
-      name: Player_RRun_9
+      name: Player_RWSquat_9
       rect:
         serializedVersion: 2
         x: 576
-        y: 0
-        width: 64
-        height: 64
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: Player_RRun_10
-      rect:
-        serializedVersion: 2
-        x: 640
-        y: 0
-        width: 64
-        height: 64
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: Player_RRun_11
-      rect:
-        serializedVersion: 2
-        x: 704
-        y: 0
-        width: 64
-        height: 64
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: Player_RRun_12
-      rect:
-        serializedVersion: 2
-        x: 768
-        y: 0
-        width: 64
-        height: 64
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: Player_RRun_13
-      rect:
-        serializedVersion: 2
-        x: 832
-        y: 0
-        width: 64
-        height: 64
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: Player_RRun_14
-      rect:
-        serializedVersion: 2
-        x: 896
-        y: 0
-        width: 64
-        height: 64
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      tessellationDetail: 0
-    - serializedVersion: 2
-      name: Player_RRun_15
-      rect:
-        serializedVersion: 2
-        x: 960
         y: 0
         width: 64
         height: 64
